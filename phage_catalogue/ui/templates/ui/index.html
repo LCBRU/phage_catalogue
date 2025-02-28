@@ -1,0 +1,47 @@
+{% extends "ui/menu_page.html" %}
+{% from "lbrc/form_macros.html" import render_form_fields, render_field_and_submit %}
+{% from "lbrc/pagination.html" import render_pagination, pagination_summary %}
+
+{% block menu_page_content %}
+<section class="container">
+    <header>
+        <h2>A Page</h2>
+
+        <form action="{{ url_for('ui.index') }}" method="GET" enctype="multipart/form-data">
+            <fieldset>
+                {{ render_form_fields(search_form) }}
+
+                <div class="button_bar">
+                    <a class="icon upload" href="javascript:;" title="Upload Study Data" hx-get="{{ url_for('ui.dialog' ) }}" hx-target="body" hx-swap="beforeend" role="button">Show Dialog</a>
+                </div>
+            </fieldset>
+        </form>
+    </header>
+
+    {{ pagination_summary(users, 'users') }}
+
+    <ul class="panel_list">
+        {% for u in users.items %}
+            <li>
+                <header class="flex_two_left_grow">
+                    <h3>{{u.full_name}}</h3>
+                    <nav class="link_list">
+                        <a title="Edit user {{ u.full_name }}" href="javascript:;" hx-get="{{ url_for('ui.edit', id=u.id) }}" hx-target="body" hx-swap="beforeend" class="icon edit"></a>
+                    </nav>
+                </header>
+                <dl class="columns">
+                    <dt>Name</dt>
+                    <dd>{{ u.full_name }}</dd>
+                    <dt>Email</dt>
+                    <dd>{{ u.email }}</dd>
+                    <dt>Last Logged In</dt>
+                    <dd>{{ last_login_at | datetime_humanize }}</dd>
+                </dl>
+           </li>
+        {% endfor %}
+    </ul>
+
+    {{ render_pagination(users, 'ui.index', form=search_form) }}
+
+</section>
+{% endblock %}

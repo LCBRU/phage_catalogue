@@ -1,0 +1,3 @@
+git+https://github.com/LCBRU/lbrc_flask.git
+Faker
+pymysql
