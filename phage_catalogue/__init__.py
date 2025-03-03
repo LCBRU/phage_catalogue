@@ -12,7 +12,7 @@ def create_app(config=Config):
     app.wsgi_app = ReverseProxied(app.wsgi_app)
     app.config.from_object(config)
 
-    TITLE = 'phage_catalogue'
+    TITLE = 'Phage Catalogue'
 
     with app.app_context():
         init_lbrc_flask(app, TITLE)

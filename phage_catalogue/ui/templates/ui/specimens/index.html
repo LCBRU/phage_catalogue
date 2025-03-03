@@ -1,0 +1,54 @@
+{% extends "ui/menu_page.html" %}
+{% from "lbrc/form_macros.html" import render_form_fields, render_field_and_submit %}
+{% from "lbrc/pagination.html" import render_pagination, pagination_summary %}
+
+{% block menu_page_content %}
+<section class="container">
+    <header>
+        <h2>Specimens</h2>
+
+        <form action="{{ url_for('ui.index') }}" method="GET" enctype="multipart/form-data">
+            <fieldset>
+                {{ render_form_fields(search_form) }}
+
+                <div class="button_bar">
+                    <a class="icon add" href="javascript:;" title="Add Bacterium" hx-get="{{ url_for('ui.specimen_bacterium_edit' ) }}" hx-target="body" hx-swap="beforeend" role="button">Add Bacterium</a>
+                    <a class="icon add" href="javascript:;" title="Add Phage" hx-get="{{ url_for('ui.specimen_phage_edit' ) }}" hx-target="body" hx-swap="beforeend" role="button">Add Phage</a>
+                </div>
+            </fieldset>
+        </form>
+    </header>
+
+    {{ pagination_summary(specimens, 'specimens') }}
+
+    <ul class="panel_list">
+        {% for s in specimens.items %}
+            <li>
+                <header class="flex_two_left_grow">
+                    <h3>{{s.type}} #{{s.id}}</h3>
+                    <nav class="link_list">
+                        {% set url = "{{ url_for('ui.specimen_bacterium_edit', id=s.id) }}" %}
+
+                        {% if s.is_phage %}
+                            {% set url = "{{ url_for('ui.specimen_phage_edit', id=s.id) }}" %}
+                        {% endif %}
+
+                        <a title="Edit {{s.phage}} #{{ s.id }}" href="javascript:;" hx-get="{{url}}" hx-target="body" hx-swap="beforeend" class="icon edit"></a>
+                        <a title="Delete {{s.type}} #{{ s.id }}" href="javascript:;" hx-post="{{ url_for('ui.specimen_delete', id=s.id) }}" hx-target="body" hx-swap="beforeend" class="icon delete" hx-confirm="Are you sure you want to delete {{s.type}} #{{s.id}}"></a>
+                    </nav>
+                </header>
+                <dl class="columns">
+                    <dt>Freezer</dt>
+                    <dd>{{ s.freezer }}</dd>
+                    <dt>Draw</dt>
+                    <dd>{{ s.draw }}</dd>
+                    <dt>Position</dt>
+                    <dd>{{ s.position }}</dd>
+                </dl>
+           </li>
+        {% endfor %}
+    </ul>
+
+    {{ render_pagination(specimens, 'ui.index', form=search_form) }}
+</section>
+{% endblock %}
