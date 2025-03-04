@@ -19,7 +19,7 @@ class Lookup(AuditMixin, CommonMixin):
     def __str__(self):
         return self.name
 
-class Species(Lookup, db.Model):
+class BacterialSpecies(Lookup, db.Model):
     pass
 
 class Strain(Lookup, db.Model):
@@ -35,9 +35,6 @@ class ResistanceMarker(Lookup, db.Model):
     pass
 
 class PhageIdentifier(Lookup, db.Model):
-    pass
-
-class Host(Lookup, db.Model):
     pass
 
 class Project(Lookup, db.Model):
@@ -85,8 +82,8 @@ class Bacterium(Specimen):
         "polymorphic_identity": 'Bacterium',
     }
 
-    species_id: Mapped[int] = mapped_column(ForeignKey(Species.id), index=True, nullable=True)
-    species: Mapped[Species] = relationship(foreign_keys=[species_id])
+    species_id: Mapped[int] = mapped_column(ForeignKey(BacterialSpecies.id), index=True, nullable=True)
+    species: Mapped[BacterialSpecies] = relationship(foreign_keys=[species_id])
     strain_id: Mapped[int] = mapped_column(ForeignKey(Strain.id), index=True, nullable=True)
     strain: Mapped[Strain] = relationship(foreign_keys=[strain_id])
     medium_id: Mapped[int] = mapped_column(ForeignKey(Medium.id), index=True, nullable=True)
@@ -109,8 +106,8 @@ class Phage(Specimen):
 
     phage_identifier_id: Mapped[int] = mapped_column(ForeignKey(PhageIdentifier.id), index=True, nullable=True)
     phage_identifier: Mapped[PhageIdentifier] = relationship(foreign_keys=[phage_identifier_id])
-    host_id: Mapped[int] = mapped_column(ForeignKey(Host.id), index=True, nullable=True)
-    host: Mapped[Host] = relationship(foreign_keys=[host_id])
+    host_id: Mapped[int] = mapped_column(ForeignKey(BacterialSpecies.id), index=True, nullable=True)
+    host: Mapped[BacterialSpecies] = relationship(foreign_keys=[host_id])
 
     @property
     def is_phage(self):

@@ -1,46 +1,51 @@
 from phage_catalogue.model import Bacterium, Phage, Specimen
+from phage_catalogue.services.lookups import get_bacterial_species_choices
 from phage_catalogue.services.specimens import specimen_bacterium_save, specimen_phage_save, specimen_search_query
 from .. import blueprint
 from flask import render_template, request, url_for
 from lbrc_flask.forms import SearchForm
 from lbrc_flask.database import db
-from wtforms import DateField, HiddenField, IntegerField, StringField, TextAreaField
-from wtforms.validators import Length
+from wtforms import DateField, HiddenField, IntegerField, SelectField, StringField, TextAreaField
 from lbrc_flask.forms import FlashingForm
 from lbrc_flask.response import refresh_response
+from wtforms.validators import Length, DataRequired
 
 
-class EditBacteriumForm(FlashingForm):
+class EditSpecimenForm(FlashingForm):
     id = HiddenField('id')
-    sample_date = DateField('Sample Date')
-    freezer = IntegerField('Freezer')
-    draw = IntegerField('Draw')
-    position = StringField('Position', validators=[Length(max=20)])
-    description = TextAreaField('Description')
-    project = StringField('Project', validators=[Length(max=100)])
-    storage_method = StringField('Storage Method', validators=[Length(max=100)])
-    staff_member = StringField('Staff Member', validators=[Length(max=100)])
-    species = StringField('Species', validators=[Length(max=100)])
-    strain = StringField('Strain', validators=[Length(max=100)])
-    medium = StringField('Medium', validators=[Length(max=100)])
-    plasmid = StringField('Plasmid', validators=[Length(max=100)])
-    resistance_marker = StringField('Resistance Marker', validators=[Length(max=100)])
+    sample_date = DateField('Sample Date', validators=[DataRequired()])
+    freezer = IntegerField('Freezer', validators=[DataRequired()])
+    draw = IntegerField('Draw', validators=[DataRequired()])
+    position = StringField('Position', validators=[Length(max=20), DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    project = StringField('Project', validators=[Length(max=100), DataRequired()])
+    storage_method = StringField('Storage Method', validators=[Length(max=100), DataRequired()])
+    staff_member = StringField('Staff Member', validators=[Length(max=100), DataRequired()])
+
+
+class EditBacteriumForm(EditSpecimenForm):
+    species_id = SelectField('Species', default=0, render_kw={'class':' select2'}, validators=[DataRequired()])
+    strain = StringField('Strain', validators=[Length(max=100), DataRequired()])
+    medium = StringField('Medium', validators=[Length(max=100), DataRequired()])
+    plasmid = StringField('Plasmid', validators=[Length(max=100), DataRequired()])
+    resistance_marker = StringField('Resistance Marker', validators=[Length(max=100), DataRequired()])
     notes = TextAreaField('Notes')
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-class EditPhageForm(FlashingForm):
-    id = HiddenField('id')
-    sample_date = DateField('Sample Date')
-    freezer = IntegerField('Freezer')
-    draw = IntegerField('Draw')
-    position = StringField('Position', validators=[Length(max=20)])
-    description = TextAreaField('Description')
-    project = StringField('Project', validators=[Length(max=100)])
-    storage_method = StringField('Storage Method', validators=[Length(max=100)])
-    staff_member = StringField('Staff Member', validators=[Length(max=100)])
-    phage_identifier = StringField('Phage Identifier', validators=[Length(max=100)])
-    host = StringField('Host', validators=[Length(max=100)])
+        self.species_id.choices = get_bacterial_species_choices()
+
+
+class EditPhageForm(EditSpecimenForm):
+    phage_identifier = StringField('Phage Identifier', validators=[Length(max=100), DataRequired()])
+    host_id = SelectField('Host', default=0, render_kw={'class':' select2'}, validators=[DataRequired()])
     notes = TextAreaField('Notes')
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.host_id.choices = get_bacterial_species_choices()
 
 
 @blueprint.route("/")

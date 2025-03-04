@@ -1,0 +1,253 @@
+Acaryochloris marina
+Acinetobacter baumannii
+Acinetobacter Johnsonii
+Acinetobacter johnsonii
+Acinetobacter junii---
+Acinetobacter lwoffii
+Actinomyces oris
+Aerococcus viridans
+Aeromonas hydrophilia
+Alcaligenes faecalis
+Arthrospira fusiformis
+Arthrospira maxima
+Arthrospira sp.
+Bacilllus subtilis
+Bacilluc megaterium
+Bacillus
+Bacillus cereus
+Bacillus infantis
+Bacillus licheniformis
+Bacillus megaterium
+Bacillus Pumilus
+Bacillus pumilus
+Bacillus sp
+Bacillus subtilis
+Bartonella henselae
+Bartonella quintana
+Borredia spp
+Borrelia
+Borrelia afzelli
+Borrelia barvariensis
+Borrelia bisettii
+Borrelia burgdoferi
+Borrelia burgdorferi
+Borrelia duttonii
+Borrelia garinii
+Borrelia garnii
+Borrelia hermsia
+Borrelia hermsii
+Borrelia miyamotoi
+Borrelia spp
+Borrelia valasiana
+Brachyspira hyodysenteriae
+Burkholderia  oklahomensis
+Burkholderia multivorans
+Burkholderia multivorans
+Burkholderia thailandensis
+Burkholderia thailandensis
+Burkholderia thailandensis
+Burkholdheria cenocepacia
+Burkholdheria thailandensis
+Campylobact jenjuni
+Candida albicans
+Candida parapsilosis
+Clostridium baratii
+Clostridium difficile
+Clostridium difficile Phage
+Clostridium difficle
+Clostridium dificile
+Clostridium hathewayi
+Clostridium paraputrificum
+Clostridium perfingens
+Clostridium perfringens
+Clostridium perfringens Phage
+Clostridium tertium
+Clostridum difficile
+Clostridum dificile
+Corynebacterium amycolatum
+Corynebacterium aurimucosum
+Corynebacterium coyleae
+Dermabacter hominis
+Dermacoccus nishinomiyaensis
+Dichelobacter nodosus
+Dickeya sp
+Enterobacter asburiae
+Enterobacter cloacae
+Enterobacter sp.
+Enterobacter spp.
+Enterococcus avium
+Enterococcus casseliflavus
+Enterococcus casseliflavus 062460
+Enterococcus cecorum
+Enterococcus faecalis
+Enterococcus faecalis 063968
+Enterococcus faecalis 064011
+Enterococcus faecalis 064036
+Enterococcus faecalis OG1RF
+Enterococcus faecalis V583
+Enterococcus faecium
+Enterococcus faecium 064041
+Enterococcus faecium 064045
+Enterococcus faecium E1162
+Enterococcus gallinarium
+Enterococcus hirae
+Enterococcus raffinosus
+Enterocococcus gallinarum 064438
+Entrobacter cloacae
+Entrobacter hormaechei
+Escherichia coli
+Escherichia coli
+Escherichic coli
+Fictibacillus phosphorivorans
+Haemophilus influenzae
+Klebsiella
+Klebsiella aerogenes
+Klebsiella michiganensis
+Klebsiella oxytoca
+Klebsiella phenunomiea
+Klebsiella pneumonia
+Klebsiella pneumoniae
+Klebsiella quasipneumoniae
+Klebsiella sp
+Klebsiella variicola
+Klebsiellaquasipneumoniae
+Lactic acid bacteria
+Lactobacillus mali
+Lactobacillus paracasei
+Lactobacillus rhamnosus
+Lactococcus lactis
+Latilactobacillus sakei
+Legionella
+Legionella pneumophila
+Leuconostoc
+Leuconostoc carnosum
+Leuconostoc citreum
+Listeria micdadei
+Lysinibacillus xylanilyticus
+Methanobacterium bryantii (DSMZ 862
+Methanobrevibacter smithii
+Methanosphaera stadtmanae
+Micrococcus luteus
+Microcystis aeruginosa
+Microcystis sp.
+Moraxella
+Moraxella bovis
+Moraxella bovoculi
+Moraxella catarrhalis
+Moraxella sp.
+Morganella morganii
+Mycobacterium smegmatis
+Myxococcus xanthus
+Neisseria gonorrhoeae
+Neisseria perflava
+Oleispira lenta
+P. gingivalis
+Paenibacillus
+Paenibacillus amylolyticus
+Pantoea Agglomerans
+Pantoea agglomerans
+Pantoea calida
+Pantoea dispersa
+Pantoea eucrina
+Pantoea stewartii
+Paracoccus sp.
+Pasteurella atlantica
+Pasteurella skyensis
+Pectobacterium atrosepticum
+Pectobacterium brasiliense
+Pectobacterium carotovorum
+Pectobacterium parmentieri
+Pectobacterium sp
+Photobacterium angustum
+Photobacterium aquimaris
+Pneumococcus
+Propionibacterium acnes
+Proteus mirabilis
+Pseudoalteromonas arctica
+Pseudoalteromonas issachenkonii
+Pseudoalteromonas marina
+Pseudoalteromonas nigrifaciens
+Pseudoalteromonas translucida
+Pseudomona sp.
+Pseudomonas
+Pseudomonas aeruginosa
+Pseudomonas azotoformans
+Pseudomonas fluorescens
+Pseudomonas luteola
+Pseudomonas monteilii
+Pseudomonas putida
+Pseudomonas stutzeri
+Psudomonos aeruginosa
+Psudomonos Oryzihabitans
+Psychrobacter aquimaris
+Psychrobacter proteolyticus
+Psychrobacter sp.
+Rahnella inusita
+Rhodococcus equi
+Rothia aeria
+Ruegeria pomeroyi
+S. mutans
+S.Capitis
+Salmonella sp
+Salmonella typhimurium
+Serratia liquefaciens
+Shewanella algidipiscicola
+Shewanella aquimarina
+Shewanella baltica
+Shewanella hafniensis
+Shewanella oneidensis
+Shewanella sp.
+Shigella
+Shigella sonnei
+Sporosarcina pasteurii
+Staphlyococcus haemolyticus
+Staphylococccus xylosus
+Staphylococcus
+Staphylococcus aureus
+Staphylococcus capitis
+Staphylococcus capitis
+Staphylococcus cohnii
+Staphylococcus epidermidis
+Staphylococcus epidermidis
+Staphylococcus hominis
+Staphylococcus hominis
+Staphylococcus lugdunensis
+Staphylococcus saprophyticus
+Staphylococcus scrirui
+Staphylococcus simulans
+Staphylococcus warneri
+Stenotrophomonas maltophilia
+Streptococcus
+Streptococcus durans
+Streptococcus mitis
+Streptococcus mutans
+Streptococcus oralis
+Streptococcus parasanguinis
+Streptococcus pneumoniae
+Streptococcus pyogenes
+Streptococcus salivarius
+Streptococcus sanguinis
+Streptococcus sp
+Stretococcus parasanguinis
+Synechococcus sp
+Vibrio aestuarianus
+Vibrio alginolyticus
+Vibrio anguillarum
+Vibrio chagasii
+Vibrio coralliilyticus
+Vibrio crassostreae
+Vibrio furnisii
+Vibrio gigantis
+Vibrio harveyi
+Vibrio ichthyoenteri
+Vibrio lentus
+Vibrio natriegens
+Vibrio owensii
+Vibrio parahaemolyticus
+Vibrio parahemolyticus
+Vibrio sp.
+Vibrio splendidus
+Vibrio toranzoniae-kanaloae
+Vibrio tubiashi
+Vibrio vulnificus
+Mannheimia haemolytica

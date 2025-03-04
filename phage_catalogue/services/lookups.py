@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from phage_catalogue.model import Host, Medium, PhageIdentifier, Plasmid, Project, ResistanceMarker, Species, StaffMember, StorageMethod, Strain
+from phage_catalogue.model import Medium, PhageIdentifier, Plasmid, Project, ResistanceMarker, BacterialSpecies, StaffMember, StorageMethod, Strain
 from lbrc_flask.database import db
 
 
@@ -15,8 +15,8 @@ def get_staff_member(name):
     return get_lookup(StaffMember, name)
 
 
-def get_species(name):
-    return get_lookup(Species, name)
+def get_bacterial_species(name):
+    return get_lookup(BacterialSpecies, name)
 
 
 def get_strain(name):
@@ -39,10 +39,6 @@ def get_phage_identifier(name):
     return get_lookup(PhageIdentifier, name)
 
 
-def get_host(name):
-    return get_lookup(Host, name)
-
-
 def get_lookup(cls, name):
     name = name.strip()
 
@@ -57,3 +53,9 @@ def get_lookup(cls, name):
     
     return result
 
+
+def get_bacterial_species_choices():
+    l = db.session.execute(
+        select(BacterialSpecies).order_by(BacterialSpecies.name)
+    ).scalars()
+    return [(0, '')] + [(x.id, x.name) for x in l]

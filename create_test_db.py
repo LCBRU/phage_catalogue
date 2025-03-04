@@ -24,6 +24,14 @@ init_users()
 alembic_cfg = Config("alembic.ini")
 command.stamp(alembic_cfg, "head")
 
-# TO DO: Create test data
+# Bacteria
+bacteria = []
+
+with open('example_data/bacteria.txt') as f:
+    for b in {l.strip().title() for l in f.readlines()}:
+        bacteria.append(BacterialSpecies(name=b))
+
+db.session.add_all(bacteria)
+db.session.commit()
 
 db.session.close()
