@@ -59,3 +59,42 @@ def get_bacterial_species_choices():
         select(BacterialSpecies).order_by(BacterialSpecies.name)
     ).scalars()
     return [(0, '')] + [(x.id, x.name) for x in l]
+
+
+def get_project_datalist_choices():
+    return get_lookup_datalist_choices(Project)
+
+
+def get_storage_method_datalist_choices():
+    return get_lookup_datalist_choices(StorageMethod)
+
+
+def get_staff_member_datalist_choices():
+    return get_lookup_datalist_choices(StaffMember)
+
+
+def get_strain_datalist_choices():
+    return get_lookup_datalist_choices(Strain)
+
+
+def get_medium_datalist_choices():
+    return get_lookup_datalist_choices(Medium)
+
+
+def get_plasmid_datalist_choices():
+    return get_lookup_datalist_choices(Plasmid)
+
+
+def get_resistance_marker_datalist_choices():
+    return get_lookup_datalist_choices(ResistanceMarker)
+
+
+def get_phage_identifier_datalist_choices():
+    return get_lookup_datalist_choices(PhageIdentifier)
+
+
+def get_lookup_datalist_choices(cls):
+    l = db.session.execute(
+        select(cls).order_by(cls.name)
+    ).scalars()
+    return [x.name for x in l]

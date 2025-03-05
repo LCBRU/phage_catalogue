@@ -9,7 +9,7 @@ def specimen_search_query(search_data):
 
 
 def specimen_bacterium_save(bacterium, data):
-    bacterium.species = get_bacterial_species(data['species'])
+    bacterium.species = get_bacterial_species(data['species_id'])
     bacterium.strain = get_strain(data['strain'])
     bacterium.medium = get_medium(data['medium'])
     bacterium.plasmid = get_plasmid(data['plasmid'])
@@ -19,7 +19,7 @@ def specimen_bacterium_save(bacterium, data):
 
 def specimen_phage_save(bacterium, data):
     bacterium.phage_identifier = get_phage_identifier(data['phage_identifier'])
-    bacterium.host = get_bacterial_species(data['host'])
+    bacterium.host = get_bacterial_species(data['host_id'])
     specimen_save(bacterium, data)
 
 

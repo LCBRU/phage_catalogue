@@ -1,12 +1,12 @@
 from phage_catalogue.model import Bacterium, Phage, Specimen
-from phage_catalogue.services.lookups import get_bacterial_species_choices
+from phage_catalogue.services.lookups import get_bacterial_species_choices, get_medium_datalist_choices, get_phage_identifier_datalist_choices, get_plasmid_datalist_choices, get_project_datalist_choices, get_resistance_marker_datalist_choices, get_staff_member_datalist_choices, get_storage_method_datalist_choices, get_strain_datalist_choices
 from phage_catalogue.services.specimens import specimen_bacterium_save, specimen_phage_save, specimen_search_query
 from .. import blueprint
 from flask import render_template, request, url_for
 from lbrc_flask.forms import SearchForm
 from lbrc_flask.database import db
 from wtforms import DateField, HiddenField, IntegerField, SelectField, StringField, TextAreaField
-from lbrc_flask.forms import FlashingForm
+from lbrc_flask.forms import FlashingForm, DataListField
 from lbrc_flask.response import refresh_response
 from wtforms.validators import Length, DataRequired
 
@@ -18,27 +18,46 @@ class EditSpecimenForm(FlashingForm):
     draw = IntegerField('Draw', validators=[DataRequired()])
     position = StringField('Position', validators=[Length(max=20), DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired()])
-    project = StringField('Project', validators=[Length(max=100), DataRequired()])
-    storage_method = StringField('Storage Method', validators=[Length(max=100), DataRequired()])
-    staff_member = StringField('Staff Member', validators=[Length(max=100), DataRequired()])
+    project = StringField('Project', validators=[Length(max=100), DataRequired()], render_kw={'list': 'project_datalist', 'autocomplete': 'off'})
+    project_datalist = DataListField()
+    storage_method = StringField('Storage Method', validators=[Length(max=100), DataRequired()], render_kw={'list': 'storage_method_datalist', 'autocomplete': 'off'})
+    storage_method_datalist = DataListField()
+    staff_member = StringField('Staff Member', validators=[Length(max=100), DataRequired()], render_kw={'list': 'staff_member_datalist', 'autocomplete': 'off'})
+    staff_member_datalist = DataListField()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.project_datalist.choices = get_project_datalist_choices()
+        self.storage_method_datalist.choices = get_storage_method_datalist_choices()
+        self.staff_member_datalist.choices = get_staff_member_datalist_choices()
 
 
 class EditBacteriumForm(EditSpecimenForm):
     species_id = SelectField('Species', default=0, render_kw={'class':' select2'}, validators=[DataRequired()])
-    strain = StringField('Strain', validators=[Length(max=100), DataRequired()])
-    medium = StringField('Medium', validators=[Length(max=100), DataRequired()])
-    plasmid = StringField('Plasmid', validators=[Length(max=100), DataRequired()])
-    resistance_marker = StringField('Resistance Marker', validators=[Length(max=100), DataRequired()])
+    strain = StringField('Strain', validators=[Length(max=100), DataRequired()], render_kw={'list': 'strain_datalist', 'autocomplete': 'off'})
+    strain_datalist = DataListField()
+    medium = StringField('Medium', validators=[Length(max=100), DataRequired()], render_kw={'list': 'medium_datalist', 'autocomplete': 'off'})
+    medium_datalist = DataListField()
+    plasmid = StringField('Plasmid', validators=[Length(max=100), DataRequired()], render_kw={'list': 'plasmid_datalist', 'autocomplete': 'off'})
+    plasmid_datalist = DataListField()
+    resistance_marker = StringField('Resistance Marker', validators=[Length(max=100), DataRequired()], render_kw={'list': 'resistance_marker_datalist', 'autocomplete': 'off'})
+    resistance_marker_datalist = DataListField()
     notes = TextAreaField('Notes')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.species_id.choices = get_bacterial_species_choices()
+        self.strain_datalist.choices = get_strain_datalist_choices()
+        self.medium_datalist.choices = get_medium_datalist_choices()
+        self.plasmid_datalist.choices = get_plasmid_datalist_choices()
+        self.resistance_marker_datalist.choices = get_resistance_marker_datalist_choices()
 
 
 class EditPhageForm(EditSpecimenForm):
-    phage_identifier = StringField('Phage Identifier', validators=[Length(max=100), DataRequired()])
+    phage_identifier = StringField('Phage Identifier', validators=[Length(max=100), DataRequired()], render_kw={'list': 'phage_identifier_datalist', 'autocomplete': 'off'})
+    phage_identifier_datalist = DataListField()
     host_id = SelectField('Host', default=0, render_kw={'class':' select2'}, validators=[DataRequired()])
     notes = TextAreaField('Notes')
 
@@ -46,6 +65,7 @@ class EditPhageForm(EditSpecimenForm):
         super().__init__(**kwargs)
 
         self.host_id.choices = get_bacterial_species_choices()
+        self.phage_identifier_datalist.choices = get_phage_identifier_datalist_choices()
 
 
 @blueprint.route("/")

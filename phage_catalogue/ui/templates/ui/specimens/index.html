@@ -27,10 +27,10 @@
                 <header class="flex_two_left_grow">
                     <h3>{{s.type}} #{{s.id}}</h3>
                     <nav class="link_list">
-                        {% set url = "{{ url_for('ui.specimen_bacterium_edit', id=s.id) }}" %}
+                        {% set url = url_for('ui.specimen_bacterium_edit', id=s.id) %}
 
                         {% if s.is_phage %}
-                            {% set url = "{{ url_for('ui.specimen_phage_edit', id=s.id) }}" %}
+                            {% set url = url_for('ui.specimen_phage_edit', id=s.id) %}
                         {% endif %}
 
                         <a title="Edit {{s.phage}} #{{ s.id }}" href="javascript:;" hx-get="{{url}}" hx-target="body" hx-swap="beforeend" class="icon edit"></a>
