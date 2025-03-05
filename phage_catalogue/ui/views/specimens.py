@@ -11,12 +11,54 @@ from lbrc_flask.response import refresh_response
 from wtforms.validators import Length, DataRequired
 
 
+class SpecimenSearchForm(SearchForm):
+    type = SelectField('Type', choices=[('', ''), ('Bacterium', 'Bacterium'), ('Phage', 'Phage')])
+    start_date = DateField('Start Date')
+    end_date = DateField('End Date')
+    freezer = IntegerField('Freezer')
+    draw = IntegerField('Draw')
+    position = StringField('Position', validators=[Length(max=20)], render_kw={'autocomplete': 'off'})
+    project = StringField('Project', validators=[Length(max=100)], render_kw={'list': 'project_datalist', 'autocomplete': 'off'})
+    project_datalist = DataListField()
+    storage_method = StringField('Storage Method', validators=[Length(max=100)], render_kw={'list': 'storage_method_datalist', 'autocomplete': 'off'})
+    storage_method_datalist = DataListField()
+    staff_member = StringField('Staff Member', validators=[Length(max=100)], render_kw={'list': 'staff_member_datalist', 'autocomplete': 'off'})
+    staff_member_datalist = DataListField()
+    species_id = SelectField('Bacterial Species', coerce=int, render_kw={'class':' select2'})
+    strain = StringField('Strain', validators=[Length(max=100)], render_kw={'list': 'strain_datalist', 'autocomplete': 'off'})
+    strain_datalist = DataListField()
+    medium = StringField('Medium', validators=[Length(max=100)], render_kw={'list': 'medium_datalist', 'autocomplete': 'off'})
+    medium_datalist = DataListField()
+    plasmid = StringField('Plasmid', validators=[Length(max=100)], render_kw={'list': 'plasmid_datalist', 'autocomplete': 'off'})
+    plasmid_datalist = DataListField()
+    resistance_marker = StringField('Resistance Marker', validators=[Length(max=100)], render_kw={'list': 'resistance_marker_datalist', 'autocomplete': 'off'})
+    resistance_marker_datalist = DataListField()
+    phage_identifier = StringField('Phage Identifier', validators=[Length(max=100)], render_kw={'list': 'phage_identifier_datalist', 'autocomplete': 'off'})
+    phage_identifier_datalist = DataListField()
+    host_id = SelectField('Phage Host', coerce=int, render_kw={'class':' select2'}, validators=[DataRequired()])
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.project_datalist.choices = get_project_datalist_choices()
+        self.storage_method_datalist.choices = get_storage_method_datalist_choices()
+        self.staff_member_datalist.choices = get_staff_member_datalist_choices()
+        self.species_id.choices = get_bacterial_species_choices()
+        self.strain_datalist.choices = get_strain_datalist_choices()
+        self.medium_datalist.choices = get_medium_datalist_choices()
+        self.plasmid_datalist.choices = get_plasmid_datalist_choices()
+        self.resistance_marker_datalist.choices = get_resistance_marker_datalist_choices()
+        self.host_id.choices = get_bacterial_species_choices()
+        self.phage_identifier_datalist.choices = get_phage_identifier_datalist_choices()
+
+
+
 class EditSpecimenForm(FlashingForm):
     id = HiddenField('id')
     sample_date = DateField('Sample Date', validators=[DataRequired()])
     freezer = IntegerField('Freezer', validators=[DataRequired()])
     draw = IntegerField('Draw', validators=[DataRequired()])
-    position = StringField('Position', validators=[Length(max=20), DataRequired()])
+    position = StringField('Position', validators=[Length(max=20), DataRequired()], render_kw={'autocomplete': 'off'})
     description = TextAreaField('Description', validators=[DataRequired()])
     project = StringField('Project', validators=[Length(max=100), DataRequired()], render_kw={'list': 'project_datalist', 'autocomplete': 'off'})
     project_datalist = DataListField()
@@ -70,7 +112,7 @@ class EditPhageForm(EditSpecimenForm):
 
 @blueprint.route("/")
 def index():
-    search_form = SearchForm(formdata=request.args, search_placeholder='Search specimens')
+    search_form = SpecimenSearchForm(formdata=request.args, search_placeholder='Search specimens')
 
     q = specimen_search_query(search_form.data)
 

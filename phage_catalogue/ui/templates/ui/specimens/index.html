@@ -8,7 +8,7 @@
         <h2>Specimens</h2>
 
         <form action="{{ url_for('ui.index') }}" method="GET" enctype="multipart/form-data">
-            <fieldset>
+            <fieldset class="columns">
                 {{ render_form_fields(search_form) }}
 
                 <div class="button_bar">
@@ -37,7 +37,46 @@
                         <a title="Delete {{s.type}} #{{ s.id }}" href="javascript:;" hx-post="{{ url_for('ui.specimen_delete', id=s.id) }}" hx-target="body" hx-swap="beforeend" class="icon delete" hx-confirm="Are you sure you want to delete {{s.type}} #{{s.id}}"></a>
                     </nav>
                 </header>
+                <h4>Sample</h4>
+                {% if s.is_bacterium %}
+                    <dl class="columns">
+                        <dt>Description</dt>
+                        <dd>{{ s.description }}</dd>
+                        <dt>Species</dt>
+                        <dd>{{ s.species.name }}</dd>
+                        <dt>Strain</dt>
+                        <dd>{{ s.strain.name }}</dd>
+                        <dt>Medium</dt>
+                        <dd>{{ s.medium.name }}</dd>
+                        <dt>Plasmid</dt>
+                        <dd>{{ s.plasmid.name }}</dd>
+                        <dt>Resistance Marker</dt>
+                        <dd>{{ s.resistance_marker.name }}</dd>
+                    </dl>
+                {% endif %}
+                {% if s.is_phage %}
+                    <dl class="columns">
+                        <dt>Description</dt>
+                        <dd>{{ s.description }}</dd>
+                        <dt>Identifier</dt>
+                        <dd>{{ s.phage_identifier.name }}</dd>
+                        <dt>Host</dt>
+                        <dd>{{ s.host.name }}</dd>
+                    </dl>
+                {% endif %}
+                <h4>Collection</h4>
                 <dl class="columns">
+                    <dt>Date</dt>
+                    <dd>{{ s.sample_date | date_format }}</dd>
+                    <dt>Project</dt>
+                    <dd>{{ s.project.name }}</dd>
+                    <dt>Staff Member</dt>
+                    <dd>{{ s.staff_member.name }}</dd>
+                </dl>
+                <h4>Storage</h4>
+                <dl class="columns">
+                    <dt>Storage Method</dt>
+                    <dd>{{ s.storage_method.name }}</dd>
                     <dt>Freezer</dt>
                     <dd>{{ s.freezer }}</dd>
                     <dt>Draw</dt>
@@ -45,6 +84,8 @@
                     <dt>Position</dt>
                     <dd>{{ s.position }}</dd>
                 </dl>
+                <h4>Notes</h4>
+                <p>{{ s.notes }}</p>
            </li>
         {% endfor %}
     </ul>
