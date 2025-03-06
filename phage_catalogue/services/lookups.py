@@ -15,10 +15,6 @@ def get_staff_member(name):
     return get_lookup(StaffMember, name)
 
 
-def get_bacterial_species(name):
-    return get_lookup(BacterialSpecies, name)
-
-
 def get_strain(name):
     return get_lookup(Strain, name)
 

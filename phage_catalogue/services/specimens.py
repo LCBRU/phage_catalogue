@@ -1,7 +1,7 @@
 from sqlalchemy import or_, select
 from phage_catalogue.model import Bacterium, Phage, Project, Specimen, StaffMember, StorageMethod
 from lbrc_flask.database import db
-from phage_catalogue.services.lookups import get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_bacterial_species, get_staff_member, get_storage_method, get_strain
+from phage_catalogue.services.lookups import get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_staff_member, get_storage_method, get_strain
 
 
 def specimen_search_query(search_data=None):
@@ -76,10 +76,10 @@ def specimen_bacterium_save(bacterium, data):
     specimen_save(bacterium, data)
 
 
-def specimen_phage_save(bacterium, data):
-    bacterium.phage_identifier = get_phage_identifier(data['phage_identifier'])
-    bacterium.host_id = data['host_id']
-    specimen_save(bacterium, data)
+def specimen_phage_save(phage, data):
+    phage.phage_identifier = get_phage_identifier(data['phage_identifier'])
+    phage.host_id = data['host_id']
+    specimen_save(phage, data)
 
 
 def specimen_save(specimen, data):

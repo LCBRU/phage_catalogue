@@ -9,6 +9,7 @@ from wtforms import DateField, HiddenField, IntegerField, SelectField, StringFie
 from lbrc_flask.forms import FlashingForm, DataListField
 from lbrc_flask.response import refresh_response
 from wtforms.validators import Length, DataRequired
+from sqlalchemy.orm import selectinload
 
 
 class SpecimenSearchForm(SearchForm):
@@ -115,6 +116,17 @@ def index():
     search_form = SpecimenSearchForm(formdata=request.args, search_placeholder='Search specimens')
 
     q = specimen_search_query(search_form.data)
+
+    q = q.options(selectinload(Specimen.project))
+    q = q.options(selectinload(Specimen.storage_method))
+    q = q.options(selectinload(Specimen.staff_member))
+    q = q.options(selectinload(Bacterium.species))
+    q = q.options(selectinload(Bacterium.strain))
+    q = q.options(selectinload(Bacterium.medium))
+    q = q.options(selectinload(Bacterium.plasmid))
+    q = q.options(selectinload(Bacterium.resistance_marker))
+    q = q.options(selectinload(Phage.phage_identifier))
+    q = q.options(selectinload(Phage.host))
 
     specimens = db.paginate(select=q)
 
