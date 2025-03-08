@@ -1,11 +1,12 @@
 {% extends "lbrc/page.html" %}
-
+{% from "lbrc/nav_macros.html" import render_user_menu with context %}
 
 {% block page_content %}
   <nav class="main_menu">
     <div class="container">
       <menu>
         <li><a href="{{url_for('ui.index')}}" icon="icon home">Specimens</a></li>
+        <li><a href="{{url_for('ui.uploads_index')}}" icon="icon home">Uploads</a></li>
       </menu>
       <menu>
         {% if current_user.is_admin %}
@@ -16,12 +17,7 @@
             </menu>
           </li>
           {% endif %}
-          <li>
-            <a>{{ current_user.full_name }}</a>
-            <menu>
-              <li><a href="{{ url_for_security('logout') }}">Log Out</a></li>
-            </menu>
-          </li>
+          {{ render_user_menu() }}
         </menu>
     </div>
   </nav>

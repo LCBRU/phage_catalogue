@@ -5,10 +5,18 @@ from lbrc_flask.database import db
 from lbrc_flask.security import init_roles, init_users
 from alembic.config import Config
 from alembic import command
-from faker import Faker
 from phage_catalogue.model import *
+from faker import Faker
+from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider
+from tests.faker import LookupProvider, SpecimenProvider, UploadProvider
 
-fake = Faker()
+
+fake = Faker("en_GB")
+fake.add_provider(LbrcFlaskFakerProvider)
+fake.add_provider(LookupProvider)
+fake.add_provider(SpecimenProvider)
+fake.add_provider(UploadProvider)
+
 
 # Load environment variables from '.env' file.
 load_dotenv()
@@ -24,14 +32,12 @@ init_users()
 alembic_cfg = Config("alembic.ini")
 command.stamp(alembic_cfg, "head")
 
-# Bacteria
-bacteria = []
+fake.create_standard_lookups()
+db.session.commit()
 
-with open('example_data/bacteria.txt') as f:
-    for b in {l.strip().title() for l in f.readlines()}:
-        bacteria.append(BacterialSpecies(name=b))
+for _ in range(20):
+    fake.get_specimen_db()
 
-db.session.add_all(bacteria)
 db.session.commit()
 
 db.session.close()

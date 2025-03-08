@@ -1,6 +1,6 @@
 from phage_catalogue.model import Bacterium, Phage, Specimen
 from phage_catalogue.services.lookups import get_bacterial_species_choices, get_medium_datalist_choices, get_phage_identifier_datalist_choices, get_plasmid_datalist_choices, get_project_datalist_choices, get_resistance_marker_datalist_choices, get_staff_member_datalist_choices, get_storage_method_datalist_choices, get_strain_datalist_choices
-from phage_catalogue.services.specimens import specimen_bacterium_save, specimen_phage_save, specimen_search_query
+from phage_catalogue.services.specimens import get_type_choices, specimen_bacterium_save, specimen_phage_save, specimen_search_query
 from .. import blueprint
 from flask import render_template, request, url_for
 from lbrc_flask.forms import SearchForm
@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 
 
 class SpecimenSearchForm(SearchForm):
-    type = SelectField('Type', choices=[('', ''), ('Bacterium', 'Bacterium'), ('Phage', 'Phage')])
+    type = SelectField('Type', choices=get_type_choices())
     start_date = DateField('Start Date')
     end_date = DateField('End Date')
     freezer = IntegerField('Freezer')

@@ -54,7 +54,7 @@ def get_bacterial_species_choices():
     l = db.session.execute(
         select(BacterialSpecies).order_by(BacterialSpecies.name)
     ).scalars()
-    return [(0, '')] + [(x.id, x.name) for x in l]
+    return [('0', '')] + [(str(x.id), x.name) for x in l]
 
 
 def get_project_datalist_choices():

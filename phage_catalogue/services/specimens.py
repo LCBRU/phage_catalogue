@@ -95,3 +95,7 @@ def specimen_save(specimen, data):
 
     db.session.add(specimen)
     db.session.commit()
+
+
+def get_type_choices():
+    return [('', ''), ('Bacterium', 'Bacterium'), ('Phage', 'Phage')]
