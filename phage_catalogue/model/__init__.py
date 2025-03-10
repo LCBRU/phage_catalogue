@@ -4,6 +4,7 @@ from flask import current_app
 from lbrc_flask.database import db
 from lbrc_flask.security import AuditMixin
 from lbrc_flask.model import CommonMixin
+from lbrc_flask.validators import is_integer, parse_date_or_none
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, String, Text
 from werkzeug.utils import secure_filename
@@ -11,24 +12,26 @@ from itertools import takewhile
 from openpyxl import load_workbook
 
 class Upload(AuditMixin, CommonMixin, db.Model):
-    COLUMN_NAME__KEY = 'key'
-    COLUMN_NAME__FREEZER = 'freezer'
-    COLUMN_NAME__DRAWER = 'drawer'
-    COLUMN_NAME__BOX_NUMBER = 'box_number'
-    COLUMN_NAME__POSITION = 'position'
-    COLUMN_NAME__BACTERIAL_SPECIES = 'bacterial species'
-    COLUMN_NAME__STRAIN = 'strain'
-    COLUMN_NAME__MEDIA = 'media'
-    COLUMN_NAME__PLASMID = 'plasmid name'
-    COLUMN_NAME__RESISTANCE_MARKER = 'resistance marker'
-    COLUMN_NAME__PHAGE_ID = 'phage id'
-    COLUMN_NAME__HOST_SPECIES = 'host species'
-    COLUMN_NAME__DESCRIPTION = 'description'
-    COLUMN_NAME__PROJECT = 'project'
-    COLUMN_NAME__DATE = 'date'
-    COLUMN_NAME__STORAGE_METHOD = 'storage method'
-    COLUMN_NAME__NAME = 'name'
-    COLUMN_NAME__NOTES = 'notes'
+    COLUMNS = {
+        'key': dict(type='int', allow_null=True),
+        'freezer': dict(type='int'),
+        'drawer': dict(type='int'),
+        'box_number': dict(type='int'),
+        'position': dict(type='str', max_length=20),
+        'bacterial species': dict(type='str', max_length=100),
+        'strain': dict(type='str', max_length=100),
+        'media': dict(type='str', max_length=100),
+        'plasmid name': dict(type='str', max_length=100),
+        'resistance marker': dict(type='str', max_length=100),
+        'phage id': dict(type='str', max_length=100),
+        'host species': dict(type='str', max_length=100),
+        'description': dict(type='str'),
+        'project': dict(type='str', max_length=100),
+        'date': dict(type='date'),
+        'storage method': dict(type='str', max_length=100),
+        'name': dict(type='str'),
+        'notes': dict(type='str'),
+    }
 
     STATUS__AWAITING_PROCESSING = 'Awaiting Processing'
     STATUS__PROCESSED = 'Processed'
@@ -40,26 +43,7 @@ class Upload(AuditMixin, CommonMixin, db.Model):
         STATUS__ERROR,
     ]
 
-    COLUMN_NAMES = [
-        COLUMN_NAME__KEY,
-        COLUMN_NAME__FREEZER,
-        COLUMN_NAME__DRAWER,
-        COLUMN_NAME__BOX_NUMBER,
-        COLUMN_NAME__POSITION,
-        COLUMN_NAME__BACTERIAL_SPECIES,
-        COLUMN_NAME__STRAIN,
-        COLUMN_NAME__MEDIA,
-        COLUMN_NAME__PLASMID,
-        COLUMN_NAME__RESISTANCE_MARKER,
-        COLUMN_NAME__PHAGE_ID,
-        COLUMN_NAME__HOST_SPECIES,
-        COLUMN_NAME__DESCRIPTION,
-        COLUMN_NAME__PROJECT,
-        COLUMN_NAME__DATE,
-        COLUMN_NAME__STORAGE_METHOD,
-        COLUMN_NAME__NAME,
-        COLUMN_NAME__NOTES,
-    ]
+    COLUMN_NAMES = set(COLUMNS.keys())
 
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column(String(500))
@@ -79,30 +63,66 @@ class Upload(AuditMixin, CommonMixin, db.Model):
         rows = self.worksheet().iter_rows(min_row=1, max_row=1)
         first_row = next(rows)
 
-        return [c.value.lower() for c in takewhile(lambda x: x.value, first_row)]
+        result = [c.value.lower() for c in takewhile(lambda x: x.value, first_row)]
 
-    @cached_property
-    def first_data_row(self):
-        def is_header(row):
-            first_column = row[0].value.strip()
-            return len(first_column) > 0 and first_column.isnumeric() == False
-
-        return len([r for r in takewhile(is_header, self.worksheet())]) + 1
+        return result
 
     def iter_rows(self):
-        for r in self.worksheet().iter_rows(min_row=self.first_data_row, values_only=True):
-            yield dict(zip(self.column_names, r))
+        for r in self.worksheet().iter_rows(values_only=True):
+            values = dict(zip(self.column_names, r))
+
+            if 'key' in values.keys() and (values.get('key', None) is None or is_integer(values['key'])):
+                yield values
 
     def validate(self):
         errors = []
 
-        for missing_column in list(set(Upload.COLUMN_NAMES) - set(self.column_names)):
-            errors.append(f"Missing column '{missing_column}'")
+        missing_columns = Upload.COLUMN_NAMES - set(self.column_names)
+        errors.extend(map(lambda x: f"Missing column '{x}'", missing_columns))
+
+        found_columns = Upload.COLUMN_NAMES.intersection(self.column_names)
+
+        for c in found_columns:
+            if e := self._validate_column_data(c):
+                errors.append(e)
 
         if errors:
             self.errors = "\n".join(errors)
             self.status = Upload.STATUS__ERROR
     
+    def _validate_column_data(self, column):
+        col_def = self.COLUMNS[column]
+
+        for r in self.iter_rows():
+            value = r[column]
+
+            if col_def['type'] == 'str':
+                e = self._is_invalid_string(value, column, col_def)
+            elif col_def['type'] == 'int':
+                e = self._is_invalid_interger(value, column, col_def)
+            elif col_def['type'] == 'date':
+                e = self._is_invalid_date(value, column, col_def)
+            
+            if e:
+                return e
+    
+    def _is_invalid_string(self, value, column, col_def):
+        max_length = col_def.get('max_length', None)
+        
+        if not max_length:
+            return
+        
+        if len(value) > max_length:
+            return f"Text too long in column '{column}'"
+
+    def _is_invalid_interger(self, value, column, col_def):
+        if not is_integer(value):
+            return f"Invalid value in column '{column}'"
+
+    def _is_invalid_date(self, value, column, col_def):
+        if parse_date_or_none(value) is None:
+            return f"Invalid value in column '{column}'"
+
     @property
     def is_error(self):
         return self.status == Upload.STATUS__ERROR
@@ -153,6 +173,7 @@ class Specimen(AuditMixin, CommonMixin, db.Model):
     freezer: Mapped[int] = mapped_column(index=True)
     draw: Mapped[int] = mapped_column(index=True)
     position: Mapped[str] = mapped_column(String(20), index=True)
+    name: Mapped[str] = mapped_column(Text, index=True)
     description: Mapped[str] = mapped_column(Text, index=True)
     notes: Mapped[str] = mapped_column(Text, index=True)
     sample_date: Mapped[date] = mapped_column(index=True)

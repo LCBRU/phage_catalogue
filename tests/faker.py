@@ -201,3 +201,39 @@ class UploadProvider(BaseProvider):
         db.session.commit()
 
         return x
+
+    def get_upload_file(self, missing_columns=None, rows=10, column_definitions=None):
+        missing_columns = set(missing_columns or [])
+        headers = list(Upload.COLUMN_NAMES - missing_columns)
+        column_definitions = column_definitions or Upload.COLUMNS
+
+        data = []
+        for h in headers:
+            column_data = self._get_upload_file_column_data(rows, column_definitions[h])
+            data.append(column_data)
+
+        return self.generator.xslx_iostream(headers=headers, data=zip(*data))
+
+    def _get_upload_file_column_data(self, rows, col_def):
+        if col_def['type'] == 'int':
+            return self.generator.pylist(rows, False, ['int'])
+        elif col_def['type'] == 'str':
+            return self._get_upload_file_column_data_string(rows, col_def)
+        elif col_def['type'] == 'date':
+            return self._get_upload_file_column_data_date(rows, col_def)
+
+    def _get_upload_file_column_data_string(self, rows, col_def):
+        result = []
+        min_length = col_def.get('min_length', 1)
+        max_length = col_def.get('max_length', 10)
+        for _ in range(rows):
+            result.append(self.generator.pystr(min_chars=min_length, max_chars=max_length))
+
+        return result
+
+    def _get_upload_file_column_data_date(self, rows, col_def):
+        result = []
+        for _ in range(rows):
+            result.append(self.generator.date())
+
+        return result

@@ -1,3 +1,4 @@
+import copy
 from io import BytesIO
 import pytest
 from flask import url_for
@@ -42,7 +43,7 @@ def test__get__has_form(client, loggedin_user):
 
 def test__post__valid_file(client, faker, loggedin_user):
     filename = 'fred.xlsx'
-    resp = _post(client, _url(external=False), faker.xslx_iostream(headers=Upload.COLUMN_NAMES), filename)
+    resp = _post(client, _url(external=False), faker.get_upload_file(), filename)
     assert__refresh_response(resp)
 
     out = db.session.execute(select(Upload)).scalar()
@@ -57,13 +58,53 @@ def test__post__valid_file(client, faker, loggedin_user):
 )
 def test__post__missing_column(client, faker, loggedin_user, missing_column_name):
     filename = 'fred.xlsx'
-    headers = Upload.COLUMN_NAMES[:]
-    headers.remove(missing_column_name)
-
-    resp = _post(client, _url(external=False), faker.xslx_iostream(headers=headers), filename)
+    file = faker.get_upload_file(missing_columns=[missing_column_name])
+    resp = _post(client, _url(external=False), file, filename)
     assert__refresh_response(resp)
 
     out = db.session.execute(select(Upload)).scalar()
     assert out.filename == filename
     assert out.status == Upload.STATUS__ERROR
     assert out.errors == f"Missing column '{missing_column_name}'"
+
+
+@pytest.mark.parametrize(
+    "invalid_column", ['freezer', 'drawer', 'box_number', 'date'],
+)
+def test__post__invalid_column_type(client, faker, loggedin_user, invalid_column):
+    filename = 'fred.xlsx'
+    col_def = copy.deepcopy(Upload.COLUMNS)
+
+    col_def[invalid_column]['type'] = 'str'
+
+    file = faker.get_upload_file(column_definitions=col_def)
+
+    resp = _post(client, _url(external=False), file, filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == f"Invalid value in column '{invalid_column}'"
+
+
+@pytest.mark.parametrize(
+    "invalid_column", ['position', 'bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker', 'phage id', 'host species', 'project', 'storage method'],
+)
+def test__post__invalid_column_length(client, faker, loggedin_user, invalid_column):
+    filename = 'fred.xlsx'
+    col_def = copy.deepcopy(Upload.COLUMNS)
+
+    old_max_length = col_def[invalid_column]['max_length']
+    col_def[invalid_column]['max_length'] = old_max_length * 2
+    col_def[invalid_column]['min_length'] = old_max_length + 1
+
+    file = faker.get_upload_file(column_definitions=col_def)
+
+    resp = _post(client, _url(external=False), file, filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == f"Text too long in column '{invalid_column}'"
