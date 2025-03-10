@@ -25,8 +25,6 @@ def process_upload(upload: Upload):
     upload.validate()
 
     if not upload.is_error:
-        for r in upload.iter_rows():
-            print(r)
         upload.status = Upload.STATUS__AWAITING_PROCESSING
 
     db.session.add(upload)

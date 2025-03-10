@@ -1,3 +1,4 @@
+import copy
 from random import choice
 from faker.providers import BaseProvider
 from sqlalchemy import select
@@ -202,38 +203,29 @@ class UploadProvider(BaseProvider):
 
         return x
 
-    def get_upload_file(self, missing_columns=None, rows=10, column_definitions=None):
-        missing_columns = set(missing_columns or [])
-        headers = list(Upload.COLUMN_NAMES - missing_columns)
-        column_definitions = column_definitions or Upload.COLUMNS
-
-        data = []
-        for h in headers:
-            column_data = self._get_upload_file_column_data(rows, column_definitions[h])
-            data.append(column_data)
-
-        return self.generator.xslx_iostream(headers=headers, data=zip(*data))
-
-    def _get_upload_file_column_data(self, rows, col_def):
-        if col_def['type'] == 'int':
-            return self.generator.pylist(rows, False, ['int'])
-        elif col_def['type'] == 'str':
-            return self._get_upload_file_column_data_string(rows, col_def)
-        elif col_def['type'] == 'date':
-            return self._get_upload_file_column_data_date(rows, col_def)
-
-    def _get_upload_file_column_data_string(self, rows, col_def):
+    def bacteria_data(self, rows=10):
         result = []
-        min_length = col_def.get('min_length', 1)
-        max_length = col_def.get('max_length', 10)
-        for _ in range(rows):
-            result.append(self.generator.pystr(min_chars=min_length, max_chars=max_length))
 
+        for _ in range(rows):
+            b = self.generator.get_bacterium()
+            result.append(b.data())
+        
         return result
 
-    def _get_upload_file_column_data_date(self, rows, col_def):
+    def phage_data(self, rows=10):
         result = []
-        for _ in range(rows):
-            result.append(self.generator.date())
 
+        for _ in range(rows):
+            p = self.generator.get_phage()
+            result.append(p.data())
+        
+        return result
+
+    def specimen_data(self, rows=10):
+        result = []
+
+        for _ in range(rows):
+            s = self.generator.get_specimen()
+            result.append(s.data())
+        
         return result

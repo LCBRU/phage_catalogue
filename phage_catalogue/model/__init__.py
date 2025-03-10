@@ -70,53 +70,58 @@ class Upload(AuditMixin, CommonMixin, db.Model):
     def iter_rows(self):
         for r in self.worksheet().iter_rows(values_only=True):
             values = dict(zip(self.column_names, r))
+            yield values
 
-            if 'key' in values.keys() and (values.get('key', None) is None or is_integer(values['key'])):
-                yield values
+    def iter_data(self):
+        for r in self.iter_rows:
+            if self._is_data_row(r):
+                yield r
+
+    def _is_data_row(self, row):
+        return 'key' in row.keys() and (row.get('key', None) is None or is_integer(row['key']))
 
     def validate(self):
         errors = []
 
-        missing_columns = Upload.COLUMN_NAMES - set(self.column_names)
-        errors.extend(map(lambda x: f"Missing column '{x}'", missing_columns))
-
-        found_columns = Upload.COLUMN_NAMES.intersection(self.column_names)
-
-        for c in found_columns:
-            if e := self._validate_column_data(c):
-                errors.append(e)
+        errors.extend(self._column_validation_errors())
+        errors.extend(self._data_validation_errors())
 
         if errors:
             self.errors = "\n".join(errors)
             self.status = Upload.STATUS__ERROR
     
-    def _validate_column_data(self, column):
-        col_def = self.COLUMNS[column]
+    def _column_validation_errors(self):
+        missing_columns = Upload.COLUMN_NAMES - set(self.column_names)
+        return map(lambda x: f"Missing column '{x}'", missing_columns)
 
-        for r in self.iter_rows():
-            value = r[column]
+    def _data_validation_errors(self):
+        errors = []
 
-            if col_def['type'] == 'str':
-                e = self._is_invalid_string(value, column, col_def)
-            elif col_def['type'] == 'int':
-                e = self._is_invalid_interger(value, column, col_def)
-            elif col_def['type'] == 'date':
-                e = self._is_invalid_date(value, column, col_def)
-            
-            if e:
-                return e
-    
+        for i, row in enumerate(self.iter_rows):
+            if self._is_ambigous_row(row):
+                errors.append(f"Row {i}: contains columns for both bacteria and phages")
+            elif self._neither_phage_nor_bacterium(row):
+                errors.append(f"Row {i}: does not contain enough information")
+            elif errors := self._bacterium_errors(row):
+                for e in errors:
+                    errors.append(f"Row {i}: {e}")
+            elif errors := self._phage_errors(row):
+                for e in errors:
+                    errors.append(f"Row {i}: {e}")
+
+        return errors
+
     def _is_invalid_string(self, value, column, col_def):
         max_length = col_def.get('max_length', None)
         
         if not max_length:
             return
         
-        if len(value) > max_length:
+        if value is None or len(value) > max_length:
             return f"Text too long in column '{column}'"
 
     def _is_invalid_interger(self, value, column, col_def):
-        if not is_integer(value):
+        if value is None or not is_integer(value):
             return f"Invalid value in column '{column}'"
 
     def _is_invalid_date(self, value, column, col_def):
@@ -193,6 +198,20 @@ class Specimen(AuditMixin, CommonMixin, db.Model):
     def is_phage(self):
         return False
 
+    def data(self):
+        return dict(
+            key=self.id,
+            freezer=self.freezer,
+            draw=self.draw,
+            position=self.position,
+            name=self.name,
+            description=self.description,
+            notes=self.notes,
+            sample_date=self.sample_date,
+            project=self.project.name,
+            storage_method=self.storage_method.name,
+            staff_member=self.staff_member.name,
+        )
 
 class Bacterium(Specimen):
     __mapper_args__ = {
@@ -213,7 +232,17 @@ class Bacterium(Specimen):
     @property
     def is_bacterium(self):
         return True
+    
+    def data(self):
+        result = super().data()
 
+        result['species'] = self.species.name
+        result['strain'] = self.strain.name
+        result['medium'] = self.medium.name
+        result['plasmid'] = self.plasmid.name
+        result['resistance_marker'] = self.resistance_marker.name
+
+        return result
 
 
 class Phage(Specimen):
@@ -229,3 +258,11 @@ class Phage(Specimen):
     @property
     def is_phage(self):
         return True
+
+    def data(self):
+        result = super().data()
+
+        result['phage_identifier'] = self.phage_identifier.name
+        result['host'] = self.host.name
+
+        return result
