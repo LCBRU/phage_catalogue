@@ -5,8 +5,8 @@ from flask import url_for
 from lbrc_flask.pytest.asserts import assert__requires_login, assert__input_file, assert__refresh_response
 from lbrc_flask.database import db
 from sqlalchemy import select
-from phage_catalogue.model import Specimen, Upload
-from tests import phage_catalogue_modal_get
+from phage_catalogue.model.uploads import Upload
+from tests.requests import phage_catalogue_modal_get
 
 
 def _url(external=True, **kwargs):

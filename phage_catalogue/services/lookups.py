@@ -1,6 +1,7 @@
 from sqlalchemy import select
-from phage_catalogue.model import Medium, PhageIdentifier, Plasmid, Project, ResistanceMarker, BacterialSpecies, StaffMember, StorageMethod, Strain
 from lbrc_flask.database import db
+
+from phage_catalogue.model.specimens import BacterialSpecies, Medium, PhageIdentifier, Plasmid, Project, ResistanceMarker, StaffMember, StorageMethod, Strain
 
 
 def get_project(name):

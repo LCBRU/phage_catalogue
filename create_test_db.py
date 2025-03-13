@@ -36,7 +36,7 @@ fake.create_standard_lookups()
 db.session.commit()
 
 for _ in range(20):
-    fake.get_specimen_db()
+    fake.specimen().get_in_db()
 
 db.session.commit()
 

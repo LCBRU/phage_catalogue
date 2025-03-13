@@ -1,6 +1,7 @@
 from sqlalchemy import select
-from phage_catalogue.model import Upload
 from lbrc_flask.database import db
+
+from phage_catalogue.model.uploads import Upload
 
 
 def upload_search_query(search_data):

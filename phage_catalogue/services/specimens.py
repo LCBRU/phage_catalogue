@@ -1,6 +1,6 @@
 from sqlalchemy import or_, select
-from phage_catalogue.model import Bacterium, Phage, Project, Specimen, StaffMember, StorageMethod
 from lbrc_flask.database import db
+from phage_catalogue.model.specimens import Bacterium, Phage, Project, Specimen, StaffMember, StorageMethod
 from phage_catalogue.services.lookups import get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_staff_member, get_storage_method, get_strain
 
 

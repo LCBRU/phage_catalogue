@@ -3,7 +3,7 @@ from flask import url_for
 from lbrc_flask.pytest.asserts import assert__search_html, assert__requires_login, assert__select, assert__input_date, assert__input_number, assert__input_text
 from phage_catalogue.services.lookups import get_bacterial_species_choices
 from phage_catalogue.services.specimens import get_type_choices
-from tests import phage_catalogue_get
+from tests.requests import phage_catalogue_get
 
 
 def _url(external=True, **kwargs):
@@ -40,5 +40,5 @@ def test__get__requires_login(client):
 
 
 def test__get__one(client, faker, loggedin_user, standard_lookups):
-    specimen = faker.get_phage()
+    specimen = faker.phage().get_in_db()
     resp = _get(client, _url(), loggedin_user, has_form=False)
