@@ -31,8 +31,9 @@ class Upload(AuditMixin, CommonMixin, db.Model):
             cls=CLASS_SPECIMEN,
         ),
         'box_number': dict(
-            type='int',
+            type='str',
             cls=CLASS_SPECIMEN,
+            max_length=100,
         ),
         'position': dict(
             type='str',
@@ -129,20 +130,20 @@ class Upload(AuditMixin, CommonMixin, db.Model):
 
     @cached_property
     def column_names(self):
-        rows = self.worksheet().iter_rows(min_row=1, max_row=1)
+        rows = self.worksheet().values
         first_row = next(rows)
 
-        result = [c.value.lower() for c in takewhile(lambda x: x.value, first_row)]
+        result = [c.lower() for c in takewhile(lambda x: x, first_row)]
 
         return result
 
     def iter_rows(self):
-        for r in self.worksheet().iter_rows(values_only=True):
+        for r in self.worksheet().values:
             values = dict(zip(self.column_names, r))
             yield values
 
     def iter_data(self):
-        for r in self.iter_rows:
+        for r in self.iter_rows():
             if self._is_data_row(r):
                 yield r
 
@@ -158,27 +159,27 @@ class Upload(AuditMixin, CommonMixin, db.Model):
         if errors:
             self.errors = "\n".join(errors)
             self.status = Upload.STATUS__ERROR
-    
+
     def _column_validation_errors(self):
         missing_columns = Upload.COLUMN_NAMES - set(self.column_names)
         return map(lambda x: f"Missing column '{x}'", missing_columns)
 
     def _data_validation_errors(self):
-        errors = []
+        result = []
 
-        for i, row in enumerate(self.iter_rows()):
+        for i, row in enumerate(self.iter_data(), 1):
             if self._is_ambigous_row(row):
-                errors.append(f"Row {i}: contains columns for both bacteria and phages")
+                result.append(f"Row {i}: contains columns for both bacteria and phages")
             elif self._neither_phage_nor_bacterium(row):
-                errors.append(f"Row {i}: does not contain enough information")
-            elif errors := self._bacterium_errors(row):
-                for e in errors:
-                    errors.append(f"Row {i}: {e}")
-            elif errors := self._phage_errors(row):
-                for e in errors:
-                    errors.append(f"Row {i}: {e}")
+                result.append(f"Row {i}: does not contain enough information")
+            elif self._has_bacterium_fields(row):
+                for e in self._bacterium_errors(row):
+                    result.append(f"Row {i}: {e}")
+            elif self._has_phage_fields(row):
+                for e in self._phage_errors(row):
+                    result.append(f"Row {i}: {e}")
 
-        return errors
+        return result
     
     def _is_ambigous_row(self, row):
         return self._has_bacterium_fields(row) and self._has_phage_fields(row)
@@ -197,70 +198,92 @@ class Upload(AuditMixin, CommonMixin, db.Model):
         return self._has_fields_for_class(row, Upload.CLASS_PHAGE)
 
     def _has_fields_for_class(self, row, cls):
-        for col_name, params in Upload.COLUMNS.items():
-            if params.get('cls', '') == cls:
-                if (row.get(col_name) or '').strip() == '':
-                    return False
+        for col_name, col_def in Upload.COLUMNS.items():
+            if col_def.get('cls', '') == cls:
+                allow_nulls = col_def.get('allow_null', False)
+                if not allow_nulls:
+                    value = row.get(col_name)
+                    if value is None or (str(row.get(col_name)) or '').strip() == '':
+                        return False
         
         return True
 
     def _specimen_errors(self, row):
-        return self._field_errors(row, Upload.CLASS_SPECIMEN)
+        result = self._field_errors_for_class(row, Upload.CLASS_SPECIMEN)
+        
+        return result
 
     def _bacterium_errors(self, row):
-        errors = []
-        errors.extend(self._specimen_errors())
-        errors.extend(self._field_errors(row, Upload.CLASS_BACTERIUM))
+        result = []
+        result.extend(self._specimen_errors(row))
+        result.extend(self._field_errors_for_class(row, Upload.CLASS_BACTERIUM))
 
-        return errors
+        return result
 
     def _phage_errors(self, row):
-        errors = []
-        errors.extend(self._specimen_errors())
-        errors.extend(self._field_errors(row, Upload.CLASS_PHAGE))
+        result = []
+        result.extend(self._specimen_errors(row))
+        result.extend(self._field_errors_for_class(row, Upload.CLASS_PHAGE))
 
-        return errors
+        return result
 
     def _field_errors_for_class(self, row, cls):
-        errors = []
-        for col_name, params in Upload.COLUMNS.items():
-            if params.get('cls', '') == cls:
-                errors.extend(self._field_errors(row, col_name, params))
+        result = []
+        for col_name, col_def in Upload.COLUMNS.items():
+            if col_def.get('cls', '') == cls:
+                result.extend(self._field_errors(row, col_name, col_def))
         
-        return errors
+        return result
     
     def _field_errors(self, row, column_name, col_def):
-        errors = []
+        result = []
 
         value = row[column_name]
 
+        allows_nulls = col_def.get('allow_null', False)
+        if not allows_nulls:
+            is_null = value is None or str(value).strip() == ''
+            if is_null:
+                result.append("Data is mising")
+
         match col_def['type']:
             case 'str':
-                errors.extend(self._is_invalid_string(value, col_def))
+                result.extend(self._is_invalid_string(value, col_def))
             case 'int':
-                errors.extend(self._is_invalid_interger(value, col_def))
+                result.extend(self._is_invalid_interger(value, col_def))
             case 'date':
-                errors.extend(self._is_invalid_date(value, col_def))
+                result.extend(self._is_invalid_date(value, col_def))
         
-        return map(lambda e: f"{column_name}: {e}", errors)
+        return map(lambda e: f"{column_name}: {e}", result)
 
 
     def _is_invalid_string(self, value, col_def):
-        max_length = col_def.get('max_length', None)
-        
-        if not max_length:
-            return
-        
-        if value is None or len(value) > max_length:
-            return f"Text is longer than {max_length} characters"
+        if value is None:
+            return []
+
+        if max_length := col_def.get('max_length', None):
+            if len(value) > max_length:
+               return [f"Text is longer than {max_length} characters"]
+
+        return []
 
     def _is_invalid_interger(self, value, col_def):
-        if value is None or not is_integer(value):
-            return f"Invalid value"
+        if value is None:
+            return []
+
+        if not is_integer(value):
+            return ["Invalid value"]
+        
+        return []
 
     def _is_invalid_date(self, value, col_def):
+        if value is None:
+            return []
+
         if parse_date_or_none(value) is None:
-            return f"Invalid value"
+            return ["Invalid value"]
+        
+        return []
 
     @property
     def is_error(self):

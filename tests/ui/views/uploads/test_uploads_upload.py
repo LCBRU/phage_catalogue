@@ -5,6 +5,7 @@ from flask import url_for
 from lbrc_flask.pytest.asserts import assert__requires_login, assert__input_file, assert__refresh_response
 from lbrc_flask.database import db
 from sqlalchemy import select
+from phage_catalogue.model.specimens import Specimen
 from phage_catalogue.model.uploads import Upload
 from tests.requests import phage_catalogue_modal_get
 
@@ -45,20 +46,28 @@ def test__post__valid_file(client, faker, loggedin_user, standard_lookups):
     data = faker.specimen_data()
     file = faker.xlsx(headers=Upload.COLUMNS.keys(), data=data)
 
-    print(data)
-
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
 
     out = db.session.execute(select(Upload)).scalar()
 
     assert out.filename == file.filename
-    assert out.status == Upload.STATUS__AWAITING_PROCESSING
     assert out.errors == ''
+    assert out.status == Upload.STATUS__AWAITING_PROCESSING
 
-    # for d in file.iter_rows():
-    #     s = db.session.get(Specimen, d['key'])
-    #     assert s is not None
+    actual = list(db.session.execute(select(Specimen)).scalars())
+
+    print('Expected:')
+    print(data)
+
+    print('\n')
+    print('-' * 100)
+    print('\n')
+
+    print('Actual:')
+    print(actual)
+
+    assert len(data) == len(actual)
 
 
 @pytest.mark.parametrize(
@@ -78,40 +87,36 @@ def test__post__missing_column(client, faker, loggedin_user, standard_lookups, m
     out = db.session.execute(select(Upload)).scalar()
     assert out.filename == file.filename
     assert out.status == Upload.STATUS__ERROR
-    assert out.errors == f"Missing column '{missing_column_name}'"
+    assert f"Missing column '{missing_column_name}'" in out.errors
 
 
 @pytest.mark.parametrize(
-    "invalid_column", ['freezer', 'drawer', 'box_number', 'date'],
+    "invalid_column", ['freezer', 'drawer', 'date'],
 )
 def test__post__invalid_column_type(client, faker, loggedin_user, standard_lookups, invalid_column):
-    col_def = copy.deepcopy(Upload.COLUMNS)
-    col_def[invalid_column]['type'] = 'str'
+    data = faker.specimen_data(rows=1)
+    data[0][invalid_column] = faker.pystr()
+    file = faker.xlsx(headers=Upload.COLUMNS.keys(), data=data)
 
-    data = faker.specimen_data()
-    file = faker.xlsx(headers=col_def.keys(), data=data)
-    
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
 
     out = db.session.execute(select(Upload)).scalar()
     assert out.filename == file.filename
     assert out.status == Upload.STATUS__ERROR
-    assert out.errors == f"Invalid value in column '{invalid_column}'"
+    assert out.errors == f"Row 1: {invalid_column}: Invalid value"
 
 
 @pytest.mark.parametrize(
-    "invalid_column", ['position', 'bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker', 'phage id', 'host species', 'project', 'storage method'],
+    "invalid_column", ['position', 'box_number', 'bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker', 'project', 'storage method'],
 )
-def test__post__invalid_column_length(client, faker, loggedin_user, standard_lookups, invalid_column):
-    col_def = copy.deepcopy(Upload.COLUMNS)
+def test__post__invalid_column_length_bacterium(client, faker, loggedin_user, standard_lookups, invalid_column):
+    max_length = Upload.COLUMNS[invalid_column]['max_length']
 
-    old_max_length = col_def[invalid_column]['max_length']
-    col_def[invalid_column]['max_length'] = old_max_length * 2
-    col_def[invalid_column]['min_length'] = old_max_length + 1
+    data = faker.bacteria_data(rows=1)
+    data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
 
-    data = faker.specimen_data()
-    file = faker.xlsx(headers=col_def.keys(), data=data)
+    file = faker.xlsx(headers=Upload.COLUMNS.keys(), data=data)
     
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
@@ -119,4 +124,24 @@ def test__post__invalid_column_length(client, faker, loggedin_user, standard_loo
     out = db.session.execute(select(Upload)).scalar()
     assert out.filename == file.filename
     assert out.status == Upload.STATUS__ERROR
-    assert out.errors == f"Text too long in column '{invalid_column}'"
+    assert out.errors == f"Row 1: {invalid_column}: Text is longer than {max_length} characters"
+
+
+@pytest.mark.parametrize(
+    "invalid_column", ['position', 'box_number', 'phage id', 'host species', 'project', 'storage method'],
+)
+def test__post__invalid_column_length_phage(client, faker, loggedin_user, standard_lookups, invalid_column):
+    max_length = Upload.COLUMNS[invalid_column]['max_length']
+
+    data = faker.phage_data(rows=1)
+    data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
+
+    file = faker.xlsx(headers=Upload.COLUMNS.keys(), data=data)
+    
+    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == file.filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == f"Row 1: {invalid_column}: Text is longer than {max_length} characters"

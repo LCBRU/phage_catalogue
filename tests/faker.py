@@ -2,7 +2,7 @@ from random import choice
 from faker.providers import BaseProvider
 from lbrc_flask.pytest.faker import FakeCreator
 
-from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, Medium, Phage, PhageIdentifier, Plasmid, Project, ResistanceMarker, Specimen, StaffMember, StorageMethod, Strain
+from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, BoxNumber, Medium, Phage, PhageIdentifier, Plasmid, Project, ResistanceMarker, Specimen, StaffMember, StorageMethod, Strain
 from phage_catalogue.model.uploads import Upload
 
 
@@ -22,7 +22,7 @@ class BacteriumFakeCreator(FakeCreator):
     def get(self, **kwargs):
         self.faker.add_provider(LookupProvider)
 
-        return self.cls(
+        result = self.cls(
             species = kwargs.get('species', self.faker.bacterial_species().choice_from_db()),
             strain = kwargs.get('strain', self.faker.strain().choice_from_db()),
             medium = kwargs.get('medium', self.faker.medium().choice_from_db()),
@@ -30,15 +30,18 @@ class BacteriumFakeCreator(FakeCreator):
             resistance_marker = kwargs.get('resistance_marker', self.faker.resistance_marker().choice_from_db()),
             sample_date = kwargs.get('sample_date', self.faker.date_object()),
             freezer = kwargs.get('freezer', self.faker.random_int()),
-            draw = kwargs.get('draw', self.faker.random_int()),
+            drawer = kwargs.get('draw', self.faker.random_int()),
             position = kwargs.get('position', self.faker.random_letter()),
             description = kwargs.get('description', self.faker.sentence()),
             project = kwargs.get('project', self.faker.project().choice_from_db()),
+            box_number = kwargs.get('box_number', self.faker.box_number().choice_from_db()),
             storage_method = kwargs.get('storage_method', self.faker.storage_method().choice_from_db()),
             staff_member = kwargs.get('staff_member', self.faker.staff_member().choice_from_db()),
             notes = kwargs.get('notes', self.faker.paragraph()),
-            name = kwargs.get('name', self.faker.pystr()),
+            name = kwargs.get('name', f"Bacterium: {self.faker.pystr()}"),
         )
+
+        return result
 
 
 class PhageFakeCreator(FakeCreator):
@@ -48,20 +51,25 @@ class PhageFakeCreator(FakeCreator):
     def get(self, **kwargs):
         self.faker.add_provider(LookupProvider)
 
-        return self.cls(
+        result = self.cls(
             phage_identifier = kwargs.get('phage_identifier', self.faker.phage_identifier().choice_from_db()),
             host = kwargs.get('host', self.faker.bacterial_species().choice_from_db()),
             sample_date = kwargs.get('sample_date', self.faker.date_object()),
             freezer = kwargs.get('freezer', self.faker.random_int()),
-            draw = kwargs.get('draw', self.faker.random_int()),
+            drawer = kwargs.get('draw', self.faker.random_int()),
             position = kwargs.get('position', self.faker.random_letter()),
             description = kwargs.get('description', self.faker.sentence()),
             project = kwargs.get('project', self.faker.project().choice_from_db()),
+            box_number = kwargs.get('box_number', self.faker.box_number().choice_from_db()),
             storage_method = kwargs.get('storage_method', self.faker.storage_method().choice_from_db()),
             staff_member = kwargs.get('staff_member', self.faker.staff_member().choice_from_db()),
             notes = kwargs.get('notes', self.faker.paragraph()),
-            name = kwargs.get('name', self.faker.pystr()),
+            name = kwargs.get('name', f"Phage: {self.faker.pystr()}"),
         )
+
+        print(f"{result.drawer}")
+
+        return result
 
 
 class SpecimenFakeCreator(FakeCreator):
@@ -96,6 +104,7 @@ class LookupProvider(BaseProvider):
             self.resistance_marker().get_in_db()
             self.phage_identifier().get_in_db()
             self.project().get_in_db()
+            self.box_number().get_in_db()
             self.storage_method().get_in_db()
             self.staff_member().get_in_db()
 
@@ -119,6 +128,9 @@ class LookupProvider(BaseProvider):
 
     def project(self):
         return LookupFakeCreator(Project)
+
+    def box_number(self):
+        return LookupFakeCreator(BoxNumber)
 
     def storage_method(self):
         return LookupFakeCreator(StorageMethod)

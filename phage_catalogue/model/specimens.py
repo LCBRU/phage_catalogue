@@ -34,6 +34,9 @@ class StorageMethod(Lookup, db.Model):
 class StaffMember(Lookup, db.Model):
     pass
 
+class BoxNumber(Lookup, db.Model):
+    pass
+
 
 class Specimen(AuditMixin, CommonMixin, db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -44,13 +47,15 @@ class Specimen(AuditMixin, CommonMixin, db.Model):
     }
 
     freezer: Mapped[int] = mapped_column(index=True)
-    draw: Mapped[int] = mapped_column(index=True)
+    drawer: Mapped[int] = mapped_column(index=True)
     position: Mapped[str] = mapped_column(String(20), index=True)
     name: Mapped[str] = mapped_column(Text, index=True)
     description: Mapped[str] = mapped_column(Text, index=True)
     notes: Mapped[str] = mapped_column(Text, index=True)
     sample_date: Mapped[date] = mapped_column(index=True)
 
+    box_number_id: Mapped[int] = mapped_column(ForeignKey(BoxNumber.id), index=True, nullable=True)
+    box_number: Mapped[BoxNumber] = relationship(foreign_keys=[box_number_id])
     project_id: Mapped[int] = mapped_column(ForeignKey(Project.id), index=True, nullable=True)
     project: Mapped[Project] = relationship(foreign_keys=[project_id])
     storage_method_id: Mapped[int] = mapped_column(ForeignKey(StorageMethod.id), index=True, nullable=True)
@@ -67,19 +72,20 @@ class Specimen(AuditMixin, CommonMixin, db.Model):
         return False
 
     def data(self):
-        return dict(
-            key=self.id,
-            freezer=self.freezer,
-            draw=self.draw,
-            position=self.position,
-            name=self.name,
-            description=self.description,
-            notes=self.notes,
-            sample_date=self.sample_date,
-            project=self.project.name,
-            storage_method=self.storage_method.name,
-            staff_member=self.staff_member.name,
-        )
+        return {
+            "key": self.id,
+            "freezer": self.freezer,
+            "drawer": self.drawer,
+            "position": self.position,
+            "box_number": self.box_number.name,
+            "name": self.name,
+            "description": self.description,
+            "notes": self.notes,
+            "date": self.sample_date,
+            "project": self.project.name,
+            "storage method": self.storage_method.name,
+            "staff member": self.staff_member.name,
+        }
 
 
 class Bacterium(Specimen):
@@ -105,11 +111,11 @@ class Bacterium(Specimen):
     def data(self):
         result = super().data()
 
-        result['species'] = self.species.name
+        result['bacterial species'] = self.species.name
         result['strain'] = self.strain.name
-        result['medium'] = self.medium.name
-        result['plasmid'] = self.plasmid.name
-        result['resistance_marker'] = self.resistance_marker.name
+        result['media'] = self.medium.name
+        result['plasmid name'] = self.plasmid.name
+        result['resistance marker'] = self.resistance_marker.name
 
         return result
 
@@ -131,7 +137,7 @@ class Phage(Specimen):
     def data(self):
         result = super().data()
 
-        result['phage_identifier'] = self.phage_identifier.name
-        result['host'] = self.host.name
+        result['phage id'] = self.phage_identifier.name
+        result['host species'] = self.host.name
 
         return result

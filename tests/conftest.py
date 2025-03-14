@@ -1,3 +1,4 @@
+import shutil
 import pytest
 from faker import Faker
 from lbrc_flask.pytest.fixtures import *
@@ -20,7 +21,9 @@ def loggedin_user(client, faker):
 
 @pytest.fixture(scope="function")
 def app():
-    return create_app(TestConfig)
+    yield create_app(TestConfig)
+
+    shutil.rmtree(TestConfig().FILE_UPLOAD_DIRECTORY, ignore_errors=True)
 
 
 @pytest.fixture(scope="function")
