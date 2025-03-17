@@ -1,4 +1,5 @@
 from functools import cached_property
+from pathlib import Path
 from flask import current_app
 from lbrc_flask.database import db
 from lbrc_flask.security import AuditMixin
@@ -7,102 +8,11 @@ from lbrc_flask.validators import is_integer, parse_date_or_none
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Text
 from werkzeug.utils import secure_filename
-from itertools import takewhile
+from itertools import compress, islice, takewhile
 from openpyxl import load_workbook
 
 
 class Upload(AuditMixin, CommonMixin, db.Model):
-    CLASS_SPECIMEN = 'specimen'
-    CLASS_BACTERIUM = 'bacterium'
-    CLASS_PHAGE = 'phage'
-
-    COLUMNS = {
-        'key': dict(
-            type='int',
-            allow_null=True,
-            cls=CLASS_SPECIMEN,
-        ),
-        'freezer': dict(
-            type='int',
-            cls=CLASS_SPECIMEN,
-        ),
-        'drawer': dict(
-            type='int',
-            cls=CLASS_SPECIMEN,
-        ),
-        'box_number': dict(
-            type='str',
-            cls=CLASS_SPECIMEN,
-            max_length=100,
-        ),
-        'position': dict(
-            type='str',
-            max_length=20,
-            cls=CLASS_SPECIMEN,
-        ),
-        'bacterial species': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_BACTERIUM,
-        ),
-        'strain': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_BACTERIUM,
-        ),
-        'media': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_BACTERIUM,
-        ),
-        'plasmid name': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_BACTERIUM,
-        ),
-        'resistance marker': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_BACTERIUM,
-        ),
-        'phage id': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_PHAGE,
-        ),
-        'host species': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_PHAGE,
-        ),
-        'description': dict(
-            type='str',
-            cls=CLASS_SPECIMEN,
-        ),
-        'project': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_SPECIMEN,
-        ),
-        'date': dict(
-            type='date',
-            cls=CLASS_SPECIMEN,
-        ),
-        'storage method': dict(
-            type='str',
-            max_length=100,
-            cls=CLASS_SPECIMEN,
-        ),
-        'name': dict(
-            type='str',
-            cls=CLASS_SPECIMEN,
-        ),
-        'notes': dict(
-            type='str',
-            cls=CLASS_SPECIMEN,
-        ),
-    }
-
     STATUS__AWAITING_PROCESSING = 'Awaiting Processing'
     STATUS__PROCESSED = 'Processed'
     STATUS__ERROR = 'Error'
@@ -113,19 +23,191 @@ class Upload(AuditMixin, CommonMixin, db.Model):
         STATUS__ERROR,
     ]
 
-    COLUMN_NAMES = set(COLUMNS.keys())
-
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column(String(500))
     status: Mapped[str] = mapped_column(String(50), default='')
     errors: Mapped[str] = mapped_column(Text, default='')
 
+    @classmethod
+    def column_definitions(self):
+        defs = BacteriumData().column_definition()
+        defs.update(PhageData().column_definition())
+
+        return defs
+
+    @classmethod
+    def column_names(self):
+        return Upload.column_definitions().keys()
+
     @property
     def local_filepath(self):
         return current_app.config["FILE_UPLOAD_DIRECTORY"] / secure_filename(f"{self.id}_{self.filename}")
 
+    def validate(self):
+        errors = set()
+
+        spreadsheet = Spreadsheet(self.local_filepath)
+
+        bacteria_data = BacteriumData()
+        phage_data = PhageData()
+
+        bacteria_row_filter = spreadsheet.rows_with_fields_for_definition(bacteria_data.column_definition())
+        phage_row_filter = spreadsheet.rows_with_fields_for_definition(phage_data.column_definition())
+
+        errors = errors.union(spreadsheet._column_validation_errors(bacteria_data.column_definition()))
+        errors = errors.union(spreadsheet._column_validation_errors(phage_data.column_definition()))
+        errors = errors.union(self._consistency_errors(bacteria_row_filter, phage_row_filter))
+
+        errors = errors.union(spreadsheet._data_validation_errors(
+            column_definition=bacteria_data.column_definition(),
+            row_filter=bacteria_row_filter,
+        ))
+
+        errors = errors.union(spreadsheet._data_validation_errors(
+            column_definition=phage_data.column_definition(),
+            row_filter=phage_row_filter,
+        ))
+
+        if errors:
+            self.errors = "\n".join(errors)
+            self.status = Upload.STATUS__ERROR
+
+    def _consistency_errors(self, bacteria_row_filter, phage_row_filter):
+        result = []
+
+        for i, (bacterium, phage) in enumerate(zip(bacteria_row_filter, phage_row_filter), 1):
+            if bacterium and phage:
+                result.append(f"Row {i}: contains columns for both bacteria and phages")
+            elif not bacterium and not phage:
+                result.append(f"Row {i}: does not contain enough information")
+        
+        return result
+
+    @property
+    def is_error(self):
+        return self.status == Upload.STATUS__ERROR
+
+
+class SpecimenData():
+    def column_definition(self):
+        return {
+            'key': dict(
+                name='key',
+                type=Spreadsheet.COLUMN_TYPE_INTEGER,
+                allow_null=True,
+            ),
+            'freezer': dict(
+                name='freezer',
+                type=Spreadsheet.COLUMN_TYPE_INTEGER,
+            ),
+            'drawer': dict(
+                name='drawer',
+                type=Spreadsheet.COLUMN_TYPE_INTEGER,
+            ),
+            'box_number': dict(
+                name='box_number',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'position': dict(
+                name='position',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=20,
+            ),
+            'description': dict(
+                name='description',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+            ),
+            'project': dict(
+                name='project',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'date': dict(
+                name='date',
+                type=Spreadsheet.COLUMN_TYPE_DATE,
+            ),
+            'storage method': dict(
+                name='storage method',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'name': dict(
+                name='name',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+            ),
+            'notes': dict(
+                name='notes',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+            ),
+        }
+    
+    def column_names(self):
+        return self.column_definition().keys()
+
+
+class BacteriumData(SpecimenData):
+    def column_definition(self):
+        result = {
+            'bacterial species': dict(
+                name='bacterial species',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'strain': dict(
+                name='strain',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'media': dict(
+                name='media',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'plasmid name': dict(
+                name='plasmid name',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'resistance marker': dict(
+                name='resistance marker',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+        }
+        result.update(super().column_definition())
+        return result
+
+
+class PhageData(SpecimenData):
+    def column_definition(self):
+        result = {
+            'phage id': dict(
+                name='phage id',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+            'host species': dict(
+                name='host species',
+                type=Spreadsheet.COLUMN_TYPE_STRING,
+                max_length=100,
+            ),
+        }
+        result.update(super().column_definition())
+        return result
+
+
+class Spreadsheet():
+    COLUMN_TYPE_STRING = 'str'
+    COLUMN_TYPE_INTEGER = 'int'
+    COLUMN_TYPE_DATE = 'date'
+
+    def __init__(self, filepath: Path, header_rows: int = 1):
+        self.filepath: Path = filepath
+        self.header_rows: int = header_rows
+
     def worksheet(self):
-        wb = load_workbook(filename=self.local_filepath, read_only=True)
+        wb = load_workbook(filename=self.filepath, read_only=True)
         return wb.active
 
     @cached_property
@@ -139,98 +221,55 @@ class Upload(AuditMixin, CommonMixin, db.Model):
 
     def iter_rows(self):
         for r in self.worksheet().values:
-            values = dict(zip(self.column_names, r))
-            yield values
+            yield dict(zip(self.column_names, r))
 
     def iter_data(self):
-        for r in self.iter_rows():
-            if self._is_data_row(r):
-                yield r
+        for r in islice(self.iter_rows(), self.header_rows, None):
+            yield r
 
-    def _is_data_row(self, row):
-        return 'key' in row.keys() and (row.get('key', None) is None or is_integer(row['key']))
-
-    def validate(self):
+    def validate(self, column_definition: dict, row_filter: list[bool]):
         errors = []
 
-        errors.extend(self._column_validation_errors())
-        errors.extend(self._data_validation_errors())
+        errors.extend(self._column_validation_errors(column_definition))
+        errors.extend(self._data_validation_errors(column_definition, row_filter))
 
-        if errors:
-            self.errors = "\n".join(errors)
-            self.status = Upload.STATUS__ERROR
+        return errors
 
-    def _column_validation_errors(self):
-        missing_columns = Upload.COLUMN_NAMES - set(self.column_names)
+    def _column_validation_errors(self, column_definition: dict):
+        missing_columns = set(column_definition.keys()) - set(self.column_names)
         return map(lambda x: f"Missing column '{x}'", missing_columns)
 
-    def _data_validation_errors(self):
+    def _data_validation_errors(self, column_definition: dict, row_filter: list[bool]):
         result = []
 
-        for i, row in enumerate(self.iter_data(), 1):
-            if self._is_ambigous_row(row):
-                result.append(f"Row {i}: contains columns for both bacteria and phages")
-            elif self._neither_phage_nor_bacterium(row):
-                result.append(f"Row {i}: does not contain enough information")
-            elif self._has_bacterium_fields(row):
-                for e in self._bacterium_errors(row):
-                    result.append(f"Row {i}: {e}")
-            elif self._has_phage_fields(row):
-                for e in self._phage_errors(row):
-                    result.append(f"Row {i}: {e}")
+        rows = compress(self.iter_data(), row_filter)
+
+        for i, row in enumerate(rows, 1):
+            row_errors = self._field_errors_for_def(row, column_definition)
+            result.extend(map(lambda e: f"Row {i}: {e}", row_errors))
 
         return result
     
-    def _is_ambigous_row(self, row):
-        return self._has_bacterium_fields(row) and self._has_phage_fields(row)
+    def rows_with_fields_for_definition(self, column_definition: dict):
+        result = []
 
-    def _neither_phage_nor_bacterium(self, row):
-        has_complete_set_of_fields = self._has_specimen_fields(row) and (self._has_bacterium_fields(row) or self._has_phage_fields(row))
-        return not has_complete_set_of_fields
+        for row in self.iter_data():
+            result.append(self._has_fields_for_definition(row, column_definition))
 
-    def _has_specimen_fields(self, row):
-        return self._has_fields_for_class(row, Upload.CLASS_SPECIMEN)
+        return result
 
-    def _has_bacterium_fields(self, row):
-        return self._has_fields_for_class(row, Upload.CLASS_BACTERIUM)
-
-    def _has_phage_fields(self, row):
-        return self._has_fields_for_class(row, Upload.CLASS_PHAGE)
-
-    def _has_fields_for_class(self, row, cls):
-        for col_name, col_def in Upload.COLUMNS.items():
-            if col_def.get('cls', '') == cls:
-                allow_nulls = col_def.get('allow_null', False)
-                if not allow_nulls:
-                    value = row.get(col_name)
-                    if value is None or (str(row.get(col_name)) or '').strip() == '':
-                        return False
+    def _has_fields_for_definition(self, row: dict, column_definition: dict):
+        for col_name, col_def in column_definition.items():
+            if not col_def.get('allow_null', False):
+                if len(str(row.get(col_name) or '').strip()) == 0:
+                    return False
         
         return True
-
-    def _specimen_errors(self, row):
-        result = self._field_errors_for_class(row, Upload.CLASS_SPECIMEN)
-        
-        return result
-
-    def _bacterium_errors(self, row):
+    
+    def _field_errors_for_def(self, row: dict, column_definition: dict):
         result = []
-        result.extend(self._specimen_errors(row))
-        result.extend(self._field_errors_for_class(row, Upload.CLASS_BACTERIUM))
-
-        return result
-
-    def _phage_errors(self, row):
-        result = []
-        result.extend(self._specimen_errors(row))
-        result.extend(self._field_errors_for_class(row, Upload.CLASS_PHAGE))
-
-        return result
-
-    def _field_errors_for_class(self, row, cls):
-        result = []
-        for col_name, col_def in Upload.COLUMNS.items():
-            if col_def.get('cls', '') == cls:
+        for col_name, col_def in column_definition.items():
+            if col_name in row:
                 result.extend(self._field_errors(row, col_name, col_def))
         
         return result
@@ -247,15 +286,14 @@ class Upload(AuditMixin, CommonMixin, db.Model):
                 result.append("Data is mising")
 
         match col_def['type']:
-            case 'str':
+            case Spreadsheet.COLUMN_TYPE_STRING:
                 result.extend(self._is_invalid_string(value, col_def))
-            case 'int':
+            case Spreadsheet.COLUMN_TYPE_INTEGER:
                 result.extend(self._is_invalid_interger(value, col_def))
-            case 'date':
+            case Spreadsheet.COLUMN_TYPE_DATE:
                 result.extend(self._is_invalid_date(value, col_def))
         
         return map(lambda e: f"{column_name}: {e}", result)
-
 
     def _is_invalid_string(self, value, col_def):
         if value is None:
@@ -284,7 +322,3 @@ class Upload(AuditMixin, CommonMixin, db.Model):
             return ["Invalid value"]
         
         return []
-
-    @property
-    def is_error(self):
-        return self.status == Upload.STATUS__ERROR
