@@ -1,12 +1,13 @@
 import copy
 from io import BytesIO
+from pprint import pp
 import pytest
 from flask import url_for
 from lbrc_flask.pytest.asserts import assert__requires_login, assert__input_file, assert__refresh_response
 from lbrc_flask.database import db
 from sqlalchemy import select
 from phage_catalogue.model.specimens import Specimen
-from phage_catalogue.model.uploads import BacteriumData, PhageData, Upload
+from phage_catalogue.model.uploads import UploadColumnDefinition, Upload
 from tests.requests import phage_catalogue_modal_get
 
 
@@ -44,7 +45,7 @@ def test__get__has_form(client, loggedin_user):
 
 def test__post__valid_file(client, faker, loggedin_user, standard_lookups):
     data = faker.specimen_data()
-    file = faker.xlsx(headers=Upload.column_names(), data=data)
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
 
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
@@ -71,15 +72,14 @@ def test__post__valid_file(client, faker, loggedin_user, standard_lookups):
 
 
 @pytest.mark.parametrize(
-    "missing_column_name", Upload.column_names(),
+    "missing_column_name", UploadColumnDefinition().column_names,
 )
 def test__post__missing_column(client, faker, loggedin_user, standard_lookups, missing_column_name):
-    col_def = copy.deepcopy(Upload.column_definitions())
-    del col_def[missing_column_name]
+    columns_to_include = set(UploadColumnDefinition().column_names) - set([missing_column_name])
 
     data = faker.specimen_data()
 
-    file = faker.xlsx(headers=col_def.keys(), data=data)
+    file = faker.xlsx(headers=columns_to_include, data=data)
     
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
@@ -96,7 +96,7 @@ def test__post__missing_column(client, faker, loggedin_user, standard_lookups, m
 def test__post__invalid_column_type(client, faker, loggedin_user, standard_lookups, invalid_column):
     data = faker.specimen_data(rows=1)
     data[0][invalid_column] = faker.pystr()
-    file = faker.xlsx(headers=Upload.column_names(), data=data)
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
 
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
@@ -111,12 +111,12 @@ def test__post__invalid_column_type(client, faker, loggedin_user, standard_looku
     "invalid_column", ['position', 'box_number', 'bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker', 'project', 'storage method'],
 )
 def test__post__invalid_column_length_bacterium(client, faker, loggedin_user, standard_lookups, invalid_column):
-    max_length = BacteriumData().column_definition()[invalid_column]['max_length']
+    max_length = UploadColumnDefinition().definition_for_column_name(invalid_column)['max_length']
 
     data = faker.bacteria_data(rows=1)
     data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
 
-    file = faker.xlsx(headers=Upload.column_names(), data=data)
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
     
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
@@ -131,12 +131,12 @@ def test__post__invalid_column_length_bacterium(client, faker, loggedin_user, st
     "invalid_column", ['position', 'box_number', 'phage id', 'host species', 'project', 'storage method'],
 )
 def test__post__invalid_column_length_phage(client, faker, loggedin_user, standard_lookups, invalid_column):
-    max_length = PhageData().column_definition()[invalid_column]['max_length']
+    max_length = UploadColumnDefinition().definition_for_column_name(invalid_column)['max_length']
 
     data = faker.phage_data(rows=1)
     data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
 
-    file = faker.xlsx(headers=Upload.column_names(), data=data)
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
     
     resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
     assert__refresh_response(resp)
