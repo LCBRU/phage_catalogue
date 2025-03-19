@@ -1,6 +1,8 @@
 from copy import deepcopy
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
+from typing import Optional
 from flask import current_app
 from lbrc_flask.database import db
 from lbrc_flask.security import AuditMixin
@@ -11,6 +13,8 @@ from sqlalchemy import String, Text
 from werkzeug.utils import secure_filename
 from itertools import compress, islice, takewhile
 from openpyxl import load_workbook
+
+from phage_catalogue.model.specimens import Bacterium
 
 
 class Upload(AuditMixin, CommonMixin, db.Model):
@@ -43,42 +47,62 @@ class Upload(AuditMixin, CommonMixin, db.Model):
             self.errors = "\n".join(errors)
             self.status = Upload.STATUS__ERROR
 
-    def _consistency_errors(self, bacteria_row_filter, phage_row_filter):
-        result = []
-
-        for i, (bacterium, phage) in enumerate(zip(bacteria_row_filter, phage_row_filter), 1):
-            if bacterium and phage:
-                result.append(f"Row {i}: contains columns for both bacteria and phages")
-            elif not bacterium and not phage:
-                result.append(f"Row {i}: does not contain enough information")
-        
-        return result
-
     @property
     def is_error(self):
         return self.status == Upload.STATUS__ERROR
 
+    def bacteria_data(self):
+        spreadsheet = BacteriaFullSpreadsheetDefinition(Spreadsheet(self.local_filepath))
 
-class ColumnDefinition():
-    COLUMN_TYPE_STRING = 'str'
-    COLUMN_TYPE_INTEGER = 'int'
-    COLUMN_TYPE_DATE = 'date'
+        return spreadsheet.translated_data()
 
+    def phages_data(self):
+        spreadsheet = PhageFullSpreadsheetDefinition(Spreadsheet(self.local_filepath))
+
+        return spreadsheet.translated_data()
+
+
+class ColumnsDefinition():
     @property
     def column_definition(self):
         return []
     
     @property
     def column_names(self):
-        return [d['name'] for d in self.column_definition]
+        return [d.name for d in self.column_definition]
 
     def definition_for_column_name(self, name):
         for d in self.column_definition:
-            if d['name'] == name:
+            if d.name == name:
                 return d
 
 
-class UploadColumnDefinition(ColumnDefinition):
+@dataclass
+class ColumnDefinition:
+    COLUMN_TYPE_STRING = 'str'
+    COLUMN_TYPE_INTEGER = 'int'
+    COLUMN_TYPE_DATE = 'date'
+
+    name: str
+    type: str
+    allow_null: bool = False
+    max_length: Optional[int] = None
+    translated_name: Optional[str] = None
+
+    def value(self, row: dict):
+        return row.get(self.name, None)
+
+    def stringed_value(self, row: dict):
+        return str(self.value(row) or '').strip()
+
+    def has_value(self, row: dict):
+        return len(self.stringed_value(row)) > 0
+
+    def get_translated_name(self):
+        return self.translated_name or self.name
+
+
+class UploadColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         result = deepcopy(SpecimenColumnDefinition().column_definition)
@@ -90,118 +114,143 @@ class UploadColumnDefinition(ColumnDefinition):
     def validation_errors(self, spreadsheet):
         errors = set()
 
-        upload_validator = SpreadsheetValidator(spreadsheet, self)
-        bactetria_validator = SpreadsheetValidator(spreadsheet, BacteriumFullColumnDefinition())
-        phage_validator = SpreadsheetValidator(spreadsheet, PhageFullColumnDefinition())
+        upload_spreadsheet = SpreadsheetDefinition(spreadsheet, self)
+        bactetria_spreadsheet = BacteriaFullSpreadsheetDefinition(spreadsheet)
+        phage_spreadsheet = PhageFullSpreadsheetDefinition(spreadsheet)
 
-        errors = errors.union(upload_validator.column_validation_errors())
-        errors = errors.union(self._consistency_errors(bactetria_validator.row_filter, phage_validator.row_filter))
-        errors = errors.union(bactetria_validator.data_validation_errors())
-        errors = errors.union(phage_validator.data_validation_errors())
+        errors = errors.union(upload_spreadsheet.column_validation_errors())
+        errors = errors.union(self._both_phage_and_bacterium_errors(spreadsheet))
+        errors = errors.union(self._not_enough_columns_errors(spreadsheet))
+        errors = errors.union(bactetria_spreadsheet.data_validation_errors())
+        errors = errors.union(phage_spreadsheet.data_validation_errors())
 
         return errors
 
-    def _consistency_errors(self, bacteria_row_filter, phage_row_filter):
+    def _not_enough_columns_errors(self, spreadsheet):
         result = []
 
-        for i, (bacterium, phage) in enumerate(zip(bacteria_row_filter, phage_row_filter), 1):
-            if bacterium and phage:
-                result.append(f"Row {i}: contains columns for both bacteria and phages")
-            elif not bacterium and not phage:
+        bactetria_full_spreadsheet = BacteriaFullSpreadsheetDefinition(spreadsheet)
+        phage_full_spreadsheet = PhageFullSpreadsheetDefinition(spreadsheet)
+
+        for i, (baceterium, phage) in enumerate(zip(bactetria_full_spreadsheet.rows_with_all_fields, phage_full_spreadsheet.rows_with_all_fields), 1):
+            if not(phage or baceterium):
                 result.append(f"Row {i}: does not contain enough information")
-        
+
         return result
 
+    def _both_phage_and_bacterium_errors(self, spreadsheet):
+        result = []
 
-class SpecimenColumnDefinition(ColumnDefinition):
+        bactetria_only_spreadsheet = BacteriaOnlySpreadsheetDefinition(spreadsheet)
+        phage_only_spreadsheet = PhageOnlySpreadsheetDefinition(spreadsheet)
+
+        for i, (bacterium, phage) in enumerate(zip(bactetria_only_spreadsheet.rows_with_any_fields, phage_only_spreadsheet.rows_with_any_fields), 1):
+            if bacterium and phage:
+                result.append(f"Row {i}: contains columns for both bacteria and phages")
+        
+        return result
+    
+
+class SpecimenColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         return [
-            dict(
+            ColumnDefinition(
                 name='key',
                 type=ColumnDefinition.COLUMN_TYPE_INTEGER,
                 allow_null=True,
             ),
-            dict(
+            ColumnDefinition(
                 name='freezer',
                 type=ColumnDefinition.COLUMN_TYPE_INTEGER,
             ),
-            dict(
+            ColumnDefinition(
                 name='drawer',
                 type=ColumnDefinition.COLUMN_TYPE_INTEGER,
             ),
-            dict(
+            ColumnDefinition(
                 name='box_number',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
             ),
-            dict(
+            ColumnDefinition(
                 name='position',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=20,
             ),
-            dict(
+            ColumnDefinition(
                 name='description',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
             ),
-            dict(
+            ColumnDefinition(
                 name='project',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
             ),
-            dict(
+            ColumnDefinition(
                 name='date',
                 type=ColumnDefinition.COLUMN_TYPE_DATE,
+                translated_name='sample_date',
             ),
-            dict(
+            ColumnDefinition(
                 name='storage method',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='storage_method',
             ),
-            dict(
+            ColumnDefinition(
                 name='name',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
             ),
-            dict(
+            ColumnDefinition(
+                name='staff member',
+                type=ColumnDefinition.COLUMN_TYPE_STRING,
+                translated_name='staff_member',
+            ),
+            ColumnDefinition(
                 name='notes',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
             ),
         ]
 
 
-class BacteriumOnlyColumnDefinition(ColumnDefinition):
+class BacteriumOnlyColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         return [
-            dict(
+            ColumnDefinition(
                 name='bacterial species',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='species',
             ),
-            dict(
+            ColumnDefinition(
                 name='strain',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
             ),
-            dict(
+            ColumnDefinition(
                 name='media',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='medium',
             ),
-            dict(
+            ColumnDefinition(
                 name='plasmid name',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='plasmid',
             ),
-            dict(
+            ColumnDefinition(
                 name='resistance marker',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='resistance_marker',
             ),
         ]
 
 
-class BacteriumFullColumnDefinition(ColumnDefinition):
+class BacteriumFullColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         result = deepcopy(SpecimenColumnDefinition().column_definition)
@@ -209,24 +258,26 @@ class BacteriumFullColumnDefinition(ColumnDefinition):
 
         return result
 
-class PhageOnlyColumnDefinition(ColumnDefinition):
+class PhageOnlyColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         return [
-            dict(
+            ColumnDefinition(
                 name='phage id',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='phage_identifier',
             ),
-            dict(
+            ColumnDefinition(
                 name='host species',
                 type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
+                translated_name='host',
             ),
         ]
 
 
-class PhageFullColumnDefinition(ColumnDefinition):
+class PhageFullColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         result = deepcopy(SpecimenColumnDefinition().column_definition)
@@ -262,11 +313,10 @@ class Spreadsheet():
             yield r
 
 
-class SpreadsheetValidator:
-    def __init__(self, spreadsheet: Spreadsheet, column_definition: ColumnDefinition):
+class SpreadsheetDefinition:
+    def __init__(self, spreadsheet: Spreadsheet, column_definition: ColumnsDefinition):
         self.spreadsheet: Spreadsheet = spreadsheet
-        self.column_definition: ColumnDefinition = column_definition
-        self.row_filter: list[bool] = self.rows_with_fields_for_definition()
+        self.column_definition: ColumnsDefinition = column_definition
     
     def validation_errors(self):
         errors = []
@@ -280,37 +330,49 @@ class SpreadsheetValidator:
         missing_columns = set(self.column_definition.column_names) - set(self.spreadsheet.column_names)
         return map(lambda x: f"Missing column '{x}'", missing_columns)
 
+    def iter_filtered_data(self):
+        return compress(self.spreadsheet.iter_data(), self.rows_with_all_fields)
+    
+    def translated_data(self):
+        for row in self.iter_filtered_data():
+            result = {}
+
+            for cd in self.column_definition.column_definition:
+                result[cd.get_translated_name()] = cd.value(row)
+            
+            yield result
+
     def data_validation_errors(self):
         result = []
 
-        rows = compress(self.spreadsheet.iter_data(), self.row_filter)
-
-        for i, row in enumerate(rows, 1):
+        for i, row in enumerate(self.iter_filtered_data(), 1):
             row_errors = self._field_errors_for_def(row)
             result.extend(map(lambda e: f"Row {i}: {e}", row_errors))
 
         return result
     
-    def rows_with_fields_for_definition(self):
+    @cached_property
+    def rows_with_all_fields(self):
         result = []
 
         for row in self.spreadsheet.iter_data():
-            result.append(self._has_fields_for_definition(row))
+            result.append(all([d.has_value(row) or d.allow_null for d in self.column_definition.column_definition]))
 
         return result
 
-    def _has_fields_for_definition(self, row: dict):
-        for col_def in self.column_definition.column_definition:
-            if not col_def.get('allow_null', False):
-                if len(str(row.get(col_def['name']) or '').strip()) == 0:
-                    return False
-        
-        return True
-    
+    @cached_property
+    def rows_with_any_fields(self):
+        result = []
+
+        for row in self.spreadsheet.iter_data():
+            result.append(any([d.has_value(row) for d in self.column_definition.column_definition]))
+
+        return result
+
     def _field_errors_for_def(self, row: dict):
         result = []
         for col_def in self.column_definition.column_definition:
-            if col_def['name'] in row:
+            if col_def.name in row:
                 result.extend(self._field_errors(row, col_def))
         
         return result
@@ -318,15 +380,14 @@ class SpreadsheetValidator:
     def _field_errors(self, row, col_def):
         result = []
 
-        value = row[col_def['name']]
+        value = row[col_def.name]
 
-        allows_nulls = col_def.get('allow_null', False)
-        if not allows_nulls:
+        if not col_def.allow_null:
             is_null = value is None or str(value).strip() == ''
             if is_null:
                 result.append("Data is mising")
 
-        match col_def['type']:
+        match col_def.type:
             case ColumnDefinition.COLUMN_TYPE_STRING:
                 result.extend(self._is_invalid_string(value, col_def))
             case ColumnDefinition.COLUMN_TYPE_INTEGER:
@@ -334,13 +395,13 @@ class SpreadsheetValidator:
             case ColumnDefinition.COLUMN_TYPE_DATE:
                 result.extend(self._is_invalid_date(value, col_def))
         
-        return map(lambda e: f"{col_def['name']}: {e}", result)
+        return map(lambda e: f"{col_def.name}: {e}", result)
 
     def _is_invalid_string(self, value, col_def):
         if value is None:
             return []
 
-        if max_length := col_def.get('max_length', None):
+        if max_length := col_def.max_length:
             if len(value) > max_length:
                return [f"Text is longer than {max_length} characters"]
 
@@ -363,3 +424,23 @@ class SpreadsheetValidator:
             return ["Invalid value"]
         
         return []
+
+
+class BacteriaFullSpreadsheetDefinition(SpreadsheetDefinition):
+    def __init__(self, spreadsheet):
+        super().__init__(spreadsheet, BacteriumFullColumnDefinition())
+    
+class BacteriaOnlySpreadsheetDefinition(SpreadsheetDefinition):
+    def __init__(self, spreadsheet):
+        super().__init__(spreadsheet, BacteriumOnlyColumnDefinition())
+
+
+class PhageFullSpreadsheetDefinition(SpreadsheetDefinition):
+    def __init__(self, spreadsheet):
+        super().__init__(spreadsheet, PhageFullColumnDefinition())
+
+
+class PhageOnlySpreadsheetDefinition(SpreadsheetDefinition):
+    def __init__(self, spreadsheet):
+        super().__init__(spreadsheet, PhageOnlyColumnDefinition())
+

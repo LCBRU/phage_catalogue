@@ -58,17 +58,7 @@ def test__post__valid_file(client, faker, loggedin_user, standard_lookups):
 
     actual = list(db.session.execute(select(Specimen)).scalars())
 
-    # print('Expected:')
-    # print(data)
-
-    # print('\n')
-    # print('-' * 100)
-    # print('\n')
-
-    # print('Actual:')
-    # print(actual)
-
-    # assert len(data) == len(actual)
+    assert len(data) == len(actual)
 
 
 @pytest.mark.parametrize(
@@ -111,7 +101,7 @@ def test__post__invalid_column_type(client, faker, loggedin_user, standard_looku
     "invalid_column", ['position', 'box_number', 'bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker', 'project', 'storage method'],
 )
 def test__post__invalid_column_length_bacterium(client, faker, loggedin_user, standard_lookups, invalid_column):
-    max_length = UploadColumnDefinition().definition_for_column_name(invalid_column)['max_length']
+    max_length = UploadColumnDefinition().definition_for_column_name(invalid_column).max_length
 
     data = faker.bacteria_data(rows=1)
     data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
@@ -131,7 +121,7 @@ def test__post__invalid_column_length_bacterium(client, faker, loggedin_user, st
     "invalid_column", ['position', 'box_number', 'phage id', 'host species', 'project', 'storage method'],
 )
 def test__post__invalid_column_length_phage(client, faker, loggedin_user, standard_lookups, invalid_column):
-    max_length = UploadColumnDefinition().definition_for_column_name(invalid_column)['max_length']
+    max_length = UploadColumnDefinition().definition_for_column_name(invalid_column).max_length
 
     data = faker.phage_data(rows=1)
     data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
@@ -145,3 +135,89 @@ def test__post__invalid_column_length_phage(client, faker, loggedin_user, standa
     assert out.filename == file.filename
     assert out.status == Upload.STATUS__ERROR
     assert out.errors == f"Row 1: {invalid_column}: Text is longer than {max_length} characters"
+
+
+@pytest.mark.parametrize(
+    "added_column", ['bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker'],
+)
+def test__post__phage_with_bacteria_data(client, faker, loggedin_user, standard_lookups, added_column):
+    data = faker.phage_data(rows=1)
+    data[0][added_column] = faker.pystr(min_chars=1, max_chars=5)
+
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+    
+    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == file.filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == "Row 1: contains columns for both bacteria and phages"
+
+
+@pytest.mark.parametrize(
+    "added_column", ['phage id', 'host species'],
+)
+def test__post__bacterium_with_phage_data(client, faker, loggedin_user, standard_lookups, added_column):
+    data = faker.bacteria_data(rows=1)
+    data[0][added_column] = faker.pystr(min_chars=1, max_chars=5)
+
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+    
+    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == file.filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == "Row 1: contains columns for both bacteria and phages"
+
+
+@pytest.mark.parametrize(
+    "missing_data", ['phage id', 'host species'],
+)
+@pytest.mark.parametrize(
+    "value", ['', None, ' '],
+)
+def test__post__phage_with_missing_data(client, faker, loggedin_user, standard_lookups, missing_data, value):
+    data = faker.phage_data(rows=1)
+    data[0][missing_data] = value
+
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+    
+    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == file.filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == "Row 1: does not contain enough information"
+
+
+@pytest.mark.parametrize(
+    "missing_data", ['bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker'],
+)
+@pytest.mark.parametrize(
+    "value", ['', None, ' '],
+)
+def test__post__bacterium_with_missing_data(client, faker, loggedin_user, standard_lookups, missing_data, value):
+    data = faker.bacteria_data(rows=1)
+    data[0][missing_data] = value
+
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+    
+    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == file.filename
+    assert out.status == Upload.STATUS__ERROR
+    assert out.errors == "Row 1: does not contain enough information"
+
+
+def test__post__bacterium__invalid_species(client, faker, loggedin_user, standard_lookups):
+    assert False
+
+
+def test__post__phage__invalid_host(client, faker, loggedin_user, standard_lookups):
+    assert False

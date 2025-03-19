@@ -19,7 +19,7 @@ def _get(client, url, loggedin_user, has_form):
     assert__input_date(soup=resp.soup, id='start_date')
     assert__input_date(soup=resp.soup, id='end_date')
     assert__input_number(soup=resp.soup, id='freezer')
-    assert__input_number(soup=resp.soup, id='draw')
+    assert__input_number(soup=resp.soup, id='drawer')
     assert__input_text(soup=resp.soup, id='position')
     assert__input_text(soup=resp.soup, id='project')
     assert__input_text(soup=resp.soup, id='storage_method')

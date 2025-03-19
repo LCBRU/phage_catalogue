@@ -17,7 +17,7 @@ class SpecimenSearchForm(SearchForm):
     start_date = DateField('Start Date')
     end_date = DateField('End Date')
     freezer = IntegerField('Freezer')
-    draw = IntegerField('Draw')
+    drawer = IntegerField('Drawer')
     position = StringField('Position', validators=[Length(max=20)], render_kw={'autocomplete': 'off'})
     project = StringField('Project', validators=[Length(max=100)], render_kw={'list': 'project_datalist', 'autocomplete': 'off'})
     project_datalist = DataListField()

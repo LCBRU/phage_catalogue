@@ -2,6 +2,7 @@ from sqlalchemy import select
 from lbrc_flask.database import db
 
 from phage_catalogue.model.uploads import Upload
+from phage_catalogue.services.specimens import specimen_bacteria_save, specimen_phages_save
 
 
 def upload_search_query(search_data):
@@ -17,15 +18,17 @@ def upload_save(data):
     u.local_filepath.parent.mkdir(parents=True, exist_ok=True)
     data['sample_file'].save(u.local_filepath)
 
-    process_upload(u)
+    upload_process(u)
 
     db.session.commit()
 
 
-def process_upload(upload: Upload):
+def upload_process(upload: Upload):
     upload.validate()
 
     if not upload.is_error:
+        specimen_bacteria_save(upload.bacteria_data())
+        specimen_phages_save(upload.phages_data())
         upload.status = Upload.STATUS__AWAITING_PROCESSING
 
     db.session.add(upload)

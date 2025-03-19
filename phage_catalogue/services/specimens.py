@@ -1,7 +1,7 @@
 from sqlalchemy import or_, select
 from lbrc_flask.database import db
 from phage_catalogue.model.specimens import Bacterium, Phage, Project, Specimen, StaffMember, StorageMethod
-from phage_catalogue.services.lookups import get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_staff_member, get_storage_method, get_strain
+from phage_catalogue.services.lookups import get_bacterial_species, get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_staff_member, get_storage_method, get_strain
 
 
 def specimen_search_query(search_data=None):
@@ -67,8 +67,13 @@ def specimen_search_query(search_data=None):
     return q
 
 
+def specimen_bacteria_save(data):
+    for d in data:
+        specimen_bacterium_save(Bacterium(), d)
+
+
 def specimen_bacterium_save(bacterium, data):
-    bacterium.species_id = data['species_id']
+    bacterium.species_id = data.get('species_id', get_bacterial_species(data['species']).id)
     bacterium.strain = get_strain(data['strain'])
     bacterium.medium = get_medium(data['medium'])
     bacterium.plasmid = get_plasmid(data['plasmid'])
@@ -76,16 +81,22 @@ def specimen_bacterium_save(bacterium, data):
     specimen_save(bacterium, data)
 
 
+def specimen_phages_save(data):
+    for d in data:
+        specimen_phage_save(Bacterium(), d)
+
+
 def specimen_phage_save(phage, data):
     phage.phage_identifier = get_phage_identifier(data['phage_identifier'])
-    phage.host_id = data['host_id']
+    phage.host_id = data.get('host_id', get_bacterial_species(data['host']).id)
     specimen_save(phage, data)
 
 
 def specimen_save(specimen, data):
+    specimen.name = data['name']
     specimen.sample_date = data['sample_date']
     specimen.freezer = data['freezer']
-    specimen.draw = data['draw']
+    specimen.drawer = data['drawer']
     specimen.position = (data['position'] or '').upper()
     specimen.description = data['description']
     specimen.project = get_project(data['project'])
@@ -94,7 +105,6 @@ def specimen_save(specimen, data):
     specimen.notes = data['notes']
 
     db.session.add(specimen)
-    db.session.commit()
 
 
 def get_type_choices():
