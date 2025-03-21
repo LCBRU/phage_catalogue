@@ -1,7 +1,7 @@
 from sqlalchemy import or_, select
 from lbrc_flask.database import db
 from phage_catalogue.model.specimens import Bacterium, Phage, Project, Specimen, StaffMember, StorageMethod
-from phage_catalogue.services.lookups import get_bacterial_species, get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_staff_member, get_storage_method, get_strain
+from phage_catalogue.services.lookups import get_bacterial_species, get_box_number, get_medium, get_phage_identifier, get_plasmid, get_project, get_resistance_marker, get_staff_member, get_storage_method, get_strain
 
 
 def specimen_search_query(search_data=None):
@@ -69,7 +69,9 @@ def specimen_search_query(search_data=None):
 
 def specimen_bacteria_save(data):
     for d in data:
-        specimen_bacterium_save(Bacterium(), d)
+        bacterium = db.session.get(Bacterium, d['key'])
+        bacterium = bacterium or Bacterium()
+        specimen_bacterium_save(bacterium, d)
 
 
 def specimen_bacterium_save(bacterium, data):
@@ -83,7 +85,9 @@ def specimen_bacterium_save(bacterium, data):
 
 def specimen_phages_save(data):
     for d in data:
-        specimen_phage_save(Bacterium(), d)
+        phage = db.session.get(Phage, d['key'])
+        phage = phage or Phage()
+        specimen_phage_save(phage, d)
 
 
 def specimen_phage_save(phage, data):
@@ -99,6 +103,7 @@ def specimen_save(specimen, data):
     specimen.drawer = data['drawer']
     specimen.position = (data['position'] or '').upper()
     specimen.description = data['description']
+    specimen.box_number = get_box_number(data['box_number'])
     specimen.project = get_project(data['project'])
     specimen.storage_method = get_storage_method(data['storage_method'])
     specimen.staff_member = get_staff_member(data['staff_member'])

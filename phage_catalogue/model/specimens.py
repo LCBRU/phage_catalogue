@@ -76,7 +76,7 @@ class Specimen(AuditMixin, CommonMixin, db.Model):
             "key": self.id,
             "freezer": self.freezer,
             "drawer": self.drawer,
-            "position": self.position,
+            "position": self.position.upper(),
             "box_number": self.box_number.name,
             "name": self.name,
             "description": self.description,

@@ -1,5 +1,5 @@
 from phage_catalogue.model.specimens import Bacterium, Phage, Specimen
-from phage_catalogue.services.lookups import get_bacterial_species_choices, get_medium_datalist_choices, get_phage_identifier_datalist_choices, get_plasmid_datalist_choices, get_project_datalist_choices, get_resistance_marker_datalist_choices, get_staff_member_datalist_choices, get_storage_method_datalist_choices, get_strain_datalist_choices
+from phage_catalogue.services.lookups import get_bacterial_species_choices, get_box_number_datalist_choices, get_medium_datalist_choices, get_phage_identifier_datalist_choices, get_plasmid_datalist_choices, get_project_datalist_choices, get_resistance_marker_datalist_choices, get_staff_member_datalist_choices, get_storage_method_datalist_choices, get_strain_datalist_choices
 from phage_catalogue.services.specimens import get_type_choices, specimen_bacterium_save, specimen_phage_save, specimen_search_query
 from .. import blueprint
 from flask import render_template, request, url_for
@@ -19,6 +19,8 @@ class SpecimenSearchForm(SearchForm):
     freezer = IntegerField('Freezer')
     drawer = IntegerField('Drawer')
     position = StringField('Position', validators=[Length(max=20)], render_kw={'autocomplete': 'off'})
+    box_number = StringField('Project', validators=[Length(max=100)], render_kw={'list': 'box_number_datalist', 'autocomplete': 'off'})
+    box_number_datalist = DataListField()
     project = StringField('Project', validators=[Length(max=100)], render_kw={'list': 'project_datalist', 'autocomplete': 'off'})
     project_datalist = DataListField()
     storage_method = StringField('Storage Method', validators=[Length(max=100)], render_kw={'list': 'storage_method_datalist', 'autocomplete': 'off'})
@@ -41,6 +43,7 @@ class SpecimenSearchForm(SearchForm):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.box_number_datalist.choices = get_box_number_datalist_choices()
         self.project_datalist.choices = get_project_datalist_choices()
         self.storage_method_datalist.choices = get_storage_method_datalist_choices()
         self.staff_member_datalist.choices = get_staff_member_datalist_choices()
@@ -61,6 +64,8 @@ class EditSpecimenForm(FlashingForm):
     draw = IntegerField('Draw', validators=[DataRequired()])
     position = StringField('Position', validators=[Length(max=20), DataRequired()], render_kw={'autocomplete': 'off'})
     description = TextAreaField('Description', validators=[DataRequired()])
+    box_number = StringField('Box Number', validators=[Length(max=100), DataRequired()], render_kw={'list': 'box_number_datalist', 'autocomplete': 'off'})
+    box_number_datalist = DataListField()
     project = StringField('Project', validators=[Length(max=100), DataRequired()], render_kw={'list': 'project_datalist', 'autocomplete': 'off'})
     project_datalist = DataListField()
     storage_method = StringField('Storage Method', validators=[Length(max=100), DataRequired()], render_kw={'list': 'storage_method_datalist', 'autocomplete': 'off'})
@@ -71,6 +76,7 @@ class EditSpecimenForm(FlashingForm):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.box_number_datalist.choices = get_box_number_datalist_choices()
         self.project_datalist.choices = get_project_datalist_choices()
         self.storage_method_datalist.choices = get_storage_method_datalist_choices()
         self.staff_member_datalist.choices = get_staff_member_datalist_choices()

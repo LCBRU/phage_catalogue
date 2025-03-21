@@ -5,8 +5,10 @@ from lbrc_flask.security import AuditMixin
 from lbrc_flask.model import CommonMixin
 from lbrc_flask.column_data import ColumnDefinition, ColumnsDefinition, ExcelData
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Text
+from sqlalchemy import String, Text, select
 from werkzeug.utils import secure_filename
+
+from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, Phage, Specimen
 
 
 class Upload(AuditMixin, CommonMixin, db.Model):
@@ -198,14 +200,6 @@ class BacteriumOnlyColumnDefinition(ColumnsDefinition):
         ]
 
 
-class BacteriumFullColumnDefinition(ColumnsDefinition):
-    @property
-    def column_definition(self):
-        result = deepcopy(SpecimenColumnDefinition().column_definition)
-        result.extend(BacteriumOnlyColumnDefinition().column_definition)
-
-        return result
-
 class PhageOnlyColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
@@ -225,7 +219,73 @@ class PhageOnlyColumnDefinition(ColumnsDefinition):
         ]
 
 
-class PhageFullColumnDefinition(ColumnsDefinition):
+class SpecimenFullColumnDefinition(ColumnsDefinition):
+    def __init__(self, cls, bacterial_species_name):
+        self.cls = cls
+        self.bacterial_species_name = bacterial_species_name
+    
+    def data_validation_errors(self, spreadsheet):
+        errors = []
+
+        errors.extend(super().data_validation_errors(spreadsheet))
+        errors.extend(self._key_errors(spreadsheet))
+        errors.extend(self._bacterial_species_errors(spreadsheet))
+
+        return errors
+    
+    def _key_errors(self, spreadsheet):
+        errors = []
+
+        for i, row in enumerate(self.iter_filtered_data(spreadsheet), 1):
+            if key := row.get('key'):
+                existing = db.session.get(Specimen, key)
+
+                if existing is None:
+                    errors.append(f"Row {i}: Key does not exist")
+                
+                if not isinstance(existing, self.cls):
+                    errors.append(f"Row {i}: Key is for the wrong type of specimen")
+
+        return errors
+
+    def _bacterial_species_errors(self, spreadsheet):
+        errors = []
+
+        for i, row in enumerate(self.iter_filtered_data(spreadsheet), 1):
+            if bacterial_species_name := row.get(self.bacterial_species_name):
+                existing = db.session.execute(select(BacterialSpecies).where(BacterialSpecies.name == bacterial_species_name)).scalar_one_or_none()
+
+                if existing is None:
+                    errors.append(f"Row {i}: {self.bacterial_species_name.title()} does not exist")
+
+        return errors
+
+        
+
+class BacteriumFullColumnDefinition(SpecimenFullColumnDefinition):
+    def __init__(self):
+        super().__init__(Bacterium, bacterial_species_name='bacterial species')
+
+    @property
+    def column_definition(self):
+        result = deepcopy(SpecimenColumnDefinition().column_definition)
+        result.extend(BacteriumOnlyColumnDefinition().column_definition)
+
+        return result
+
+    def data_validation_errors(self, spreadsheet):
+        errors = []
+
+        errors.extend(super().data_validation_errors(spreadsheet))
+        errors.extend(self._bacterial_species_errors(spreadsheet))
+
+        return errors
+
+
+class PhageFullColumnDefinition(SpecimenFullColumnDefinition):
+    def __init__(self):
+        super().__init__(Phage, bacterial_species_name='host species')
+
     @property
     def column_definition(self):
         result = deepcopy(SpecimenColumnDefinition().column_definition)

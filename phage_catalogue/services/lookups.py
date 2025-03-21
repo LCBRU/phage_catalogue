@@ -1,7 +1,11 @@
 from sqlalchemy import select
 from lbrc_flask.database import db
 
-from phage_catalogue.model.specimens import BacterialSpecies, Medium, PhageIdentifier, Plasmid, Project, ResistanceMarker, StaffMember, StorageMethod, Strain
+from phage_catalogue.model.specimens import BacterialSpecies, BoxNumber, Medium, PhageIdentifier, Plasmid, Project, ResistanceMarker, StaffMember, StorageMethod, Strain
+
+
+def get_box_number(name):
+    return get_lookup_or_create(BoxNumber, name)
 
 
 def get_project(name):
@@ -71,6 +75,10 @@ def get_bacterial_species_choices():
         select(BacterialSpecies).order_by(BacterialSpecies.name)
     ).scalars()
     return [('0', '')] + [(str(x.id), x.name) for x in l]
+
+
+def get_box_number_datalist_choices():
+    return get_lookup_datalist_choices(BoxNumber)
 
 
 def get_project_datalist_choices():

@@ -1,11 +1,13 @@
 import copy
 from io import BytesIO
 from pprint import pp
+from random import choice
 import pytest
 from flask import url_for
 from lbrc_flask.pytest.asserts import assert__requires_login, assert__input_file, assert__refresh_response
 from lbrc_flask.database import db
-from sqlalchemy import select
+from lbrc_flask.python_helpers import dictlist_remove_key
+from sqlalchemy import func, select
 from phage_catalogue.model.specimens import Specimen
 from phage_catalogue.model.uploads import UploadColumnDefinition, Upload
 from tests.requests import phage_catalogue_modal_get
@@ -34,6 +36,22 @@ def _post(client, url, file, filename):
     return client.post(url, data=data)
 
 
+def _post_upload_data(client, faker, data, expected_status, expected_errors, expected_specimens):
+    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+    _post_upload_file(client, expected_status, expected_errors, expected_specimens, file)
+
+
+def _post_upload_file(client, expected_status, expected_errors, expected_specimens, file):
+    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
+    assert__refresh_response(resp)
+
+    out = db.session.execute(select(Upload)).scalar()
+    assert out.filename == file.filename
+    assert out.status == expected_status
+    assert expected_errors in out.errors
+    assert db.session.execute(select(func.count(Specimen.id))).scalar() == expected_specimens
+
+
 def test__get__requires_login(client):
     assert__requires_login(client, _url(external=False))
 
@@ -43,22 +61,75 @@ def test__get__has_form(client, loggedin_user):
     _get(client, _url(external=False), loggedin_user, has_form=True)
 
 
-def test__post__valid_file(client, faker, loggedin_user, standard_lookups):
-    data = faker.specimen_data()
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+@pytest.mark.parametrize(
+    "data_source", ["bacteria", "phages", "specimens"],
+)
+def test__post__valid_file__insert(client, faker, loggedin_user, standard_lookups, data_source):
+    match data_source:
+        case 'bacteria':
+            data = faker.bacteria_data()
+        case 'phages':
+            data = faker.phage_data()
+        case 'specimens':
+            data = faker.specimen_data()
 
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
+    _post_upload_data(
+        client,
+        faker,
+        data,
+        expected_status=Upload.STATUS__AWAITING_PROCESSING,
+        expected_errors="",
+        expected_specimens=len(data),
+        )
 
-    out = db.session.execute(select(Upload)).scalar()
+    # Remove Keys as the data has no keys, but they will be
+    # given one when they are saved
+    actual = dictlist_remove_key([s.data() for s in db.session.execute(select(Specimen)).scalars()], 'key')
+    expected = dictlist_remove_key(data, 'key')
+    assert expected == actual
 
-    assert out.filename == file.filename
-    assert out.errors == ''
-    assert out.status == Upload.STATUS__AWAITING_PROCESSING
 
-    actual = list(db.session.execute(select(Specimen)).scalars())
+@pytest.mark.parametrize(
+    "data_source", ["bacteria", "phages", "specimens"],
+)
+def test__post__valid_file__update(client, faker, loggedin_user, standard_lookups, data_source):
+    rows = 10
+    match data_source:
+        case 'bacteria':
+            existing = [faker.bacterium().get_in_db() for _ in range(rows)]
+            data = faker.bacteria_data(rows=rows)
+        case 'phages':
+            existing = [faker.phage().get_in_db() for _ in range(rows)]
+            data = faker.phage_data(rows=rows)
+        case 'specimens':
+            existing = []
+            data = []
+            for _ in range(rows):
+                if choice([True, False]):
+                    existing.append(faker.bacterium().get_in_db())
+                    data.extend(faker.bacteria_data(rows=1))
+                else:
+                    existing.append(faker.phage().get_in_db())
+                    data.extend(faker.phage_data(rows=1))
 
-    assert len(data) == len(actual)
+    for d, e in zip(data, existing):
+        d['key'] = e.id
+
+    _post_upload_data(
+        client,
+        faker,
+        data,
+        expected_status=Upload.STATUS__AWAITING_PROCESSING,
+        expected_errors="",
+        expected_specimens=len(data),
+        )
+
+    # Remove Keys as the data has no keys, but they will be
+    # given one when they are saved
+    actual = [s.data() for s in db.session.execute(select(Specimen)).scalars()]
+    expected = data
+
+    assert expected == actual
 
 
 @pytest.mark.parametrize(
@@ -70,14 +141,14 @@ def test__post__missing_column(client, faker, loggedin_user, standard_lookups, m
     data = faker.specimen_data()
 
     file = faker.xlsx(headers=columns_to_include, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
 
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert f"Missing column '{missing_column_name}'" in out.errors
+    _post_upload_file(
+        client=client,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors=f"Missing column '{missing_column_name}'",
+        expected_specimens=0,
+        file=file,
+    )
 
 
 @pytest.mark.parametrize(
@@ -86,15 +157,15 @@ def test__post__missing_column(client, faker, loggedin_user, standard_lookups, m
 def test__post__invalid_column_type(client, faker, loggedin_user, standard_lookups, invalid_column):
     data = faker.specimen_data(rows=1)
     data[0][invalid_column] = faker.pystr()
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
 
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
-
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == f"Row 1: {invalid_column}: Invalid value"
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors=f"Row 1: {invalid_column}: Invalid value",
+        expected_specimens=0,
+    )
 
 
 @pytest.mark.parametrize(
@@ -106,15 +177,14 @@ def test__post__invalid_column_length_bacterium(client, faker, loggedin_user, st
     data = faker.bacteria_data(rows=1)
     data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
 
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
-
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == f"Row 1: {invalid_column}: Text is longer than {max_length} characters"
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors=f"Row 1: {invalid_column}: Text is longer than {max_length} characters",
+        expected_specimens=0,
+    )
 
 
 @pytest.mark.parametrize(
@@ -126,15 +196,14 @@ def test__post__invalid_column_length_phage(client, faker, loggedin_user, standa
     data = faker.phage_data(rows=1)
     data[0][invalid_column] = faker.pystr(min_chars=max_length+1, max_chars=max_length*2)
 
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
-
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == f"Row 1: {invalid_column}: Text is longer than {max_length} characters"
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors=f"Row 1: {invalid_column}: Text is longer than {max_length} characters",
+        expected_specimens=0,
+    )
 
 
 @pytest.mark.parametrize(
@@ -144,15 +213,14 @@ def test__post__phage_with_bacteria_data(client, faker, loggedin_user, standard_
     data = faker.phage_data(rows=1)
     data[0][added_column] = faker.pystr(min_chars=1, max_chars=5)
 
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
-
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == "Row 1: contains columns for both bacteria and phages"
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: contains columns for both bacteria and phages",
+        expected_specimens=0,
+    )
 
 
 @pytest.mark.parametrize(
@@ -162,15 +230,14 @@ def test__post__bacterium_with_phage_data(client, faker, loggedin_user, standard
     data = faker.bacteria_data(rows=1)
     data[0][added_column] = faker.pystr(min_chars=1, max_chars=5)
 
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
-
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == "Row 1: contains columns for both bacteria and phages"
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: contains columns for both bacteria and phages",
+        expected_specimens=0,
+    )
 
 
 @pytest.mark.parametrize(
@@ -183,15 +250,14 @@ def test__post__phage_with_missing_data(client, faker, loggedin_user, standard_l
     data = faker.phage_data(rows=1)
     data[0][missing_data] = value
 
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
-
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == "Row 1: does not contain enough information"
+    _post_upload_data(
+        client,
+        faker,
+        data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: does not contain enough information",
+        expected_specimens=0,
+        )
 
 
 @pytest.mark.parametrize(
@@ -204,20 +270,85 @@ def test__post__bacterium_with_missing_data(client, faker, loggedin_user, standa
     data = faker.bacteria_data(rows=1)
     data[0][missing_data] = value
 
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
-    
-    resp = _post(client, _url(external=False), file.get_iostream(), file.filename)
-    assert__refresh_response(resp)
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: does not contain enough information",
+        expected_specimens=0,
+    )
 
-    out = db.session.execute(select(Upload)).scalar()
-    assert out.filename == file.filename
-    assert out.status == Upload.STATUS__ERROR
-    assert out.errors == "Row 1: does not contain enough information"
+
+@pytest.mark.parametrize(
+    "data_source", ["bacteria", "phages"],
+)
+def test__post__specimen__key_does_not_exist(client, faker, loggedin_user, standard_lookups, data_source):
+    match data_source:
+        case 'bacteria':
+            data = faker.bacteria_data(rows=1)
+        case 'phages':
+            data = faker.phage_data(rows=1)
+
+    data[0]['key'] = 673
+
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: Key does not exist",
+        expected_specimens=0,
+    )
+
+
+@pytest.mark.parametrize(
+    "data_source", ["bacteria", "phages"],
+)
+def test__post__specimen__key_for_wrong_type_of_specimen(client, faker, loggedin_user, standard_lookups, data_source):
+    match data_source:
+        case 'bacteria':
+            existing = faker.phage().get_in_db()
+            data = faker.bacteria_data(rows=1)
+        case 'phages':
+            existing = faker.bacterium().get_in_db()
+            data = faker.phage_data(rows=1)
+
+    data[0]['key'] = existing.id
+
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: Key is for the wrong type of specimen",
+        expected_specimens=1,
+    )
 
 
 def test__post__bacterium__invalid_species(client, faker, loggedin_user, standard_lookups):
-    assert False
+    data = faker.bacteria_data(rows=1)
+    data[0]['bacterial species'] = 'This doesnt exist'
+
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: Bacterial Species does not exist",
+        expected_specimens=0,
+    )
 
 
 def test__post__phage__invalid_host(client, faker, loggedin_user, standard_lookups):
-    assert False
+    data = faker.phage_data(rows=1)
+    data[0]['host species'] = 'This doesnt exist'
+
+    _post_upload_data(
+        client=client,
+        faker=faker,
+        data=data,
+        expected_status=Upload.STATUS__ERROR,
+        expected_errors="Row 1: Host Species does not exist",
+        expected_specimens=0,
+    )
