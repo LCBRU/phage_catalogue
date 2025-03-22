@@ -69,8 +69,10 @@ def specimen_search_query(search_data=None):
 
 def specimen_bacteria_save(data):
     for d in data:
-        bacterium = db.session.get(Bacterium, d['key'])
-        bacterium = bacterium or Bacterium()
+        if d['key']:
+            bacterium = db.session.get(Bacterium, d['key'])
+        else:
+            bacterium = Bacterium()
         specimen_bacterium_save(bacterium, d)
 
 
@@ -85,8 +87,10 @@ def specimen_bacterium_save(bacterium, data):
 
 def specimen_phages_save(data):
     for d in data:
-        phage = db.session.get(Phage, d['key'])
-        phage = phage or Phage()
+        if d['key']:
+            phage = db.session.get(Phage, d['key'])
+        else:
+            phage = Phage()
         specimen_phage_save(phage, d)
 
 
