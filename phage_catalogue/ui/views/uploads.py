@@ -1,4 +1,5 @@
 from flask_wtf.file import FileRequired
+from phage_catalogue.model.uploads import Upload
 from phage_catalogue.services.uploads import upload_save, upload_search_query
 from .. import blueprint
 from flask import render_template, request, url_for
@@ -21,6 +22,7 @@ def uploads_index():
     search_form = SearchForm(formdata=request.args, search_placeholder='Search uploads')
 
     q = upload_search_query(search_form.data)
+    q = q.order_by(Upload.created_date.desc())
 
     uploads = db.paginate(select=q)
 

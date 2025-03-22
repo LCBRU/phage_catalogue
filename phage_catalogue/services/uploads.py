@@ -5,8 +5,16 @@ from phage_catalogue.model.uploads import Upload
 from phage_catalogue.services.specimens import specimen_bacteria_save, specimen_phages_save
 
 
-def upload_search_query(search_data):
-    return select(Upload)
+def upload_search_query(search_data=None):
+    q = select(Upload)
+
+    search_data = search_data or []
+
+    if x := search_data.get('search'):
+        for word in x.split():
+            q = q.where(Upload.filename.like(f"%{word}%"))
+
+    return q
 
 
 def upload_save(data):
