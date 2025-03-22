@@ -67,8 +67,6 @@ class PhageFakeCreator(FakeCreator):
             name = kwargs.get('name', f"Phage: {self.faker.pystr()}"),
         )
 
-        print(f"{result.drawer}")
-
         return result
 
 

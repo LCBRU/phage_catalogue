@@ -47,8 +47,11 @@ def _post_upload_file(client, expected_status, expected_errors, expected_specime
 
     out = db.session.execute(select(Upload)).scalar()
     assert out.filename == file.filename
+    if expected_errors:
+        assert expected_errors in out.errors
+    else:
+        assert len(out.errors) == 0
     assert out.status == expected_status
-    assert expected_errors in out.errors
     assert db.session.execute(select(func.count(Specimen.id))).scalar() == expected_specimens
 
 
@@ -149,6 +152,36 @@ def test__post__missing_column(client, faker, loggedin_user, standard_lookups, m
         expected_specimens=0,
         file=file,
     )
+
+
+@pytest.mark.parametrize(
+    "casing", ['lower', 'upper', 'title'],
+)
+def test__post__case_insenstive_column_names(client, faker, loggedin_user, standard_lookups, casing):
+    match casing:
+        case 'lower':
+            columns_to_include = [cn.lower() for cn in UploadColumnDefinition().column_names]
+        case 'upper':
+            columns_to_include = [cn.upper() for cn in UploadColumnDefinition().column_names]
+        case 'title':
+            columns_to_include = [cn.title() for cn in UploadColumnDefinition().column_names]
+
+    data = faker.specimen_data()
+    file = faker.xlsx(headers=columns_to_include, data=data)
+
+    _post_upload_file(
+        client,
+        expected_status=Upload.STATUS__AWAITING_PROCESSING,
+        expected_errors="",
+        expected_specimens=len(data),
+        file=file,
+        )
+
+    # Remove Keys as the data has no keys, but they will be
+    # given one when they are saved
+    actual = dictlist_remove_key([s.data() for s in db.session.execute(select(Specimen)).scalars()], 'key')
+    expected = dictlist_remove_key(data, 'key')
+    assert expected == actual
 
 
 @pytest.mark.parametrize(

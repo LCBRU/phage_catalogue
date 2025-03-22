@@ -66,13 +66,14 @@ class UploadColumnDefinition(ColumnsDefinition):
         return result
 
     def validation_errors(self, spreadsheet):
-        errors = set()
+        errors = []
 
-        errors = errors.union(self.column_validation_errors(spreadsheet))
-        errors = errors.union(self._both_phage_and_bacterium_errors(spreadsheet))
-        errors = errors.union(self._not_enough_columns_errors(spreadsheet))
-        errors = errors.union(BacteriumFullColumnDefinition().data_validation_errors(spreadsheet))
-        errors = errors.union(PhageFullColumnDefinition().data_validation_errors(spreadsheet))
+        errors.extend(self.column_validation_errors(spreadsheet))
+        if not errors:
+            errors.extend(self._both_phage_and_bacterium_errors(spreadsheet))
+            errors.extend(self._not_enough_columns_errors(spreadsheet))
+            errors.extend(BacteriumFullColumnDefinition().data_validation_errors(spreadsheet))
+            errors.extend(PhageFullColumnDefinition().data_validation_errors(spreadsheet))
 
         return errors
 
