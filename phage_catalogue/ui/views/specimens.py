@@ -2,7 +2,7 @@ from phage_catalogue.model.specimens import Bacterium, Phage, Specimen
 from phage_catalogue.services.lookups import get_bacterial_species_choices, get_box_number_datalist_choices, get_medium_datalist_choices, get_phage_identifier_datalist_choices, get_plasmid_datalist_choices, get_project_datalist_choices, get_resistance_marker_datalist_choices, get_staff_member_datalist_choices, get_storage_method_datalist_choices, get_strain_datalist_choices
 from phage_catalogue.services.specimens import get_type_choices, specimen_bacterium_save, specimen_phage_save, specimen_search_query
 from .. import blueprint
-from flask import render_template, request, url_for
+from flask import render_template, render_template_string, request, url_for
 from lbrc_flask.forms import SearchForm
 from lbrc_flask.database import db
 from wtforms import DateField, HiddenField, IntegerField, SelectField, StringField, TextAreaField
@@ -140,6 +140,22 @@ def index():
         "ui/specimens/index.html",
         specimens=specimens,
         search_form=search_form,
+    )
+
+
+@blueprint.route("/specimen/<int:id>/details/<string:detail_selector>")
+def specimen_details(id, detail_selector):
+    specimen = db.get_or_404(Specimen, id)
+
+    template = '''
+        {% from "ui/specimens/details.html" import render_specimen %}
+        {{ render_specimen(specimen, detail_selector) }}
+    '''
+
+    return render_template_string(
+        template,
+        specimen=specimen,
+        detail_selector=detail_selector,
     )
 
 

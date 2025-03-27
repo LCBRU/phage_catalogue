@@ -32,3 +32,9 @@ def test__search__one_found(client, faker, loggedin_user, standard_lookups):
     uploads = [faker.upload().get_in_db() for _ in range(10)]
 
     resp = _get(client, _url(search=uploads[0].filename), loggedin_user, has_form=False, expected_count=1)
+
+
+def test__search__none_found(client, faker, loggedin_user, standard_lookups):
+    upload = faker.upload().get_in_db(filename='not_there.xslx')
+
+    resp = _get(client, _url(search='suttin_else.xslx'), loggedin_user, has_form=False, expected_count=0)

@@ -385,3 +385,7 @@ def test__post__phage__invalid_host(client, faker, loggedin_user, standard_looku
         expected_errors="Row 1: Host Species does not exist",
         expected_specimens=0,
     )
+
+
+def test__post__new_this_and_that(client, faker, loggedin_user, standard_lookups):
+    assert False

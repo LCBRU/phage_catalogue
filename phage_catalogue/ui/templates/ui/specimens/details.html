@@ -1,0 +1,89 @@
+{% from "lbrc/tabbed_display.html" import tabbed_display_tab with context %}
+
+
+{% macro render_specimen(specimen, details_selector) %}
+    <div id="details_{{specimen.id}}" class="tabbed_display">
+        <div class="tabbed_display_tabs {{detail_selector}}" hx-target="#details_{{specimen.id}}" hx-trigger="refreshDetails from:body" hx-swap="outerHTML"  hx-get="{{ url_for('ui.specimen_details', id=specimen.id, detail_selector=details_selector) }}">
+            {{ tabbed_display_tab(details_selector, 'sample', 'Sample', url_for('ui.specimen_details', id=specimen.id, detail_selector='sample')) }}
+            {{ tabbed_display_tab(details_selector, 'collection', 'Collection', url_for('ui.specimen_details', id=specimen.id, detail_selector='collection')) }}
+            {{ tabbed_display_tab(details_selector, 'storage', 'Storage', url_for('ui.specimen_details', id=specimen.id, detail_selector='storage')) }}
+            {{ tabbed_display_tab(details_selector, 'notes', 'Notes', url_for('ui.specimen_details', id=specimen.id, detail_selector='notes')) }}
+        </div>
+        <div class="tabbed_display_content">
+            {% if details_selector == 'sample' %}
+                {% if specimen.is_bacterium %}
+                    {{ render_specimen_bacterium(specimen) }}
+                {% elif specimen.is_phage %}
+                    {{ render_specimen_phage(specimen) }}
+                {% endif %}
+            {% elif details_selector == 'collection' %}
+                {{ render_specimen_collection(specimen) }}
+            {% elif details_selector == 'storage' %}
+                {{ render_specimen_storage(specimen) }}
+            {% elif details_selector == 'notes' %}
+                {{ render_specimen_notes(specimen) }}
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
+
+{% macro render_specimen_bacterium(specimen) %}
+    <dl class="columns">
+        <dt>Description</dt>
+        <dd>{{ specimen.description }}</dd>
+        <dt>Species</dt>
+        <dd>{{ specimen.species.name }}</dd>
+        <dt>Strain</dt>
+        <dd>{{ specimen.strain.name }}</dd>
+        <dt>Medium</dt>
+        <dd>{{ specimen.medium.name }}</dd>
+        <dt>Plasmid</dt>
+        <dd>{{ specimen.plasmid.name }}</dd>
+        <dt>Resistance Marker</dt>
+        <dd>{{ specimen.resistance_marker.name }}</dd>
+    </dl>
+{% endmacro %}
+
+
+{% macro render_specimen_phage(specimen) %}
+    <dl class="columns">
+        <dt>Description</dt>
+        <dd>{{ specimen.description }}</dd>
+        <dt>Identifier</dt>
+        <dd>{{ specimen.phage_identifier.name }}</dd>
+        <dt>Host</dt>
+        <dd>{{ specimen.host.name }}</dd>
+    </dl>
+{% endmacro %}
+
+
+{% macro render_specimen_collection(specimen) %}
+    <dl class="columns">
+        <dt>Date</dt>
+        <dd>{{ specimen.sample_date | date_format }}</dd>
+        <dt>Project</dt>
+        <dd>{{ specimen.project.name }}</dd>
+        <dt>Staff Member</dt>
+        <dd>{{ specimen.staff_member.name }}</dd>
+    </dl>
+{% endmacro %}
+
+
+{% macro render_specimen_storage(specimen) %}
+    <dl class="columns">
+        <dt>Storage Method</dt>
+        <dd>{{ specimen.storage_method.name }}</dd>
+        <dt>Freezer</dt>
+        <dd>{{ specimen.freezer }}</dd>
+        <dt>Draw</dt>
+        <dd>{{ specimen.drawer }}</dd>
+        <dt>Position</dt>
+        <dd>{{ specimen.position }}</dd>
+    </dl>
+{% endmacro %}
+
+
+{% macro render_specimen_notes(specimen) %}
+    <p>{{ specimen.notes }}</p>
+{% endmacro %}
