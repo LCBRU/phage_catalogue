@@ -5,7 +5,10 @@ from lbrc_flask.database import db
 from lbrc_flask.security import init_roles, init_users
 from alembic.config import Config
 from alembic import command
-from phage_catalogue.model import *
+from phage_catalogue.model.specimens_audit import *
+from phage_catalogue.model.specimens import *
+from phage_catalogue.model.lookups import *
+from phage_catalogue.model.uploads import *
 from faker import Faker
 from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider
 from tests.faker import LookupProvider, SpecimenProvider, UploadProvider

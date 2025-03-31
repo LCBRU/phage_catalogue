@@ -71,21 +71,21 @@ class Specimen(AuditMixin, CommonMixin, db.Model):
     def is_phage(self):
         return False
 
-    def data(self):
-        return {
-            "key": self.id,
-            "freezer": self.freezer,
-            "drawer": self.drawer,
-            "position": self.position.upper(),
-            "box_number": self.box_number.name,
-            "name": self.name,
-            "description": self.description,
-            "notes": self.notes,
-            "date": self.sample_date,
-            "project": self.project.name,
-            "storage method": self.storage_method.name,
-            "staff member": self.staff_member.name,
-        }
+    # def data(self):
+    #     return {
+    #         "key": self.id,
+    #         "freezer": self.freezer,
+    #         "drawer": self.drawer,
+    #         "position": self.position.upper(),
+    #         "box_number": self.box_number.name,
+    #         "name": self.name,
+    #         "description": self.description,
+    #         "notes": self.notes,
+    #         "date": self.sample_date,
+    #         "project": self.project.name,
+    #         "storage method": self.storage_method.name,
+    #         "staff member": self.staff_member.name,
+    #     }
 
 
 class Bacterium(Specimen):
@@ -108,16 +108,16 @@ class Bacterium(Specimen):
     def is_bacterium(self):
         return True
     
-    def data(self):
-        result = super().data()
+    # def data(self):
+    #     result = super().data()
 
-        result['bacterial species'] = self.species.name
-        result['strain'] = self.strain.name
-        result['media'] = self.medium.name
-        result['plasmid name'] = self.plasmid.name
-        result['resistance marker'] = self.resistance_marker.name
+    #     result['bacterial species'] = self.species.name
+    #     result['strain'] = self.strain.name
+    #     result['media'] = self.medium.name
+    #     result['plasmid name'] = self.plasmid.name
+    #     result['resistance marker'] = self.resistance_marker.name
 
-        return result
+    #     return result
 
 
 class Phage(Specimen):
@@ -134,10 +134,10 @@ class Phage(Specimen):
     def is_phage(self):
         return True
 
-    def data(self):
-        result = super().data()
+    # def data(self):
+    #     result = super().data()
 
-        result['phage id'] = self.phage_identifier.name
-        result['host species'] = self.host.name
+    #     result['phage id'] = self.phage_identifier.name
+    #     result['host species'] = self.host.name
 
-        return result
+    #     return result

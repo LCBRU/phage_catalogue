@@ -30,6 +30,8 @@
 
 {% macro render_specimen_bacterium(specimen) %}
     <dl class="columns">
+        <dt>Name</dt>
+        <dd>{{ specimen.name }}</dd>
         <dt>Description</dt>
         <dd>{{ specimen.description }}</dd>
         <dt>Species</dt>
@@ -48,6 +50,8 @@
 
 {% macro render_specimen_phage(specimen) %}
     <dl class="columns">
+        <dt>Name</dt>
+        <dd>{{ specimen.name }}</dd>
         <dt>Description</dt>
         <dd>{{ specimen.description }}</dd>
         <dt>Identifier</dt>

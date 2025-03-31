@@ -14,6 +14,7 @@ def specimen_search_query(search_data=None):
             q = q.where(or_(
                 Specimen.description.like(f"%{word}%"),
                 Specimen.notes.like(f"%{word}%"),
+                Specimen.name.like(f"%{word}%"),
             ))
 
     if x := search_data.get('type'):
@@ -77,7 +78,10 @@ def specimen_bacteria_save(data):
 
 
 def specimen_bacterium_save(bacterium, data):
-    bacterium.species_id = data.get('species_id', get_bacterial_species(data['species']).id)
+    if 'species_id' in data:
+        bacterium.species_id = data['species_id']
+    else:
+        bacterium.species_id = get_bacterial_species(data['species']).id
     bacterium.strain = get_strain(data['strain'])
     bacterium.medium = get_medium(data['medium'])
     bacterium.plasmid = get_plasmid(data['plasmid'])
@@ -96,7 +100,10 @@ def specimen_phages_save(data):
 
 def specimen_phage_save(phage, data):
     phage.phage_identifier = get_phage_identifier(data['phage_identifier'])
-    phage.host_id = data.get('host_id', get_bacterial_species(data['host']).id)
+    if 'host_id' in data:
+        phage.host_id = data['host_id']
+    else:
+        phage.host_id = get_bacterial_species(data['host']).id
     specimen_save(phage, data)
 
 

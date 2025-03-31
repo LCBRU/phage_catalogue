@@ -59,9 +59,10 @@ class SpecimenSearchForm(SearchForm):
 
 class EditSpecimenForm(FlashingForm):
     id = HiddenField('id')
+    name = StringField('Name', validators=[Length(max=100), DataRequired()])
     sample_date = DateField('Sample Date', validators=[DataRequired()])
     freezer = IntegerField('Freezer', validators=[DataRequired()])
-    draw = IntegerField('Draw', validators=[DataRequired()])
+    drawer = IntegerField('Drawer', validators=[DataRequired()])
     position = StringField('Position', validators=[Length(max=20), DataRequired()], render_kw={'autocomplete': 'off'})
     description = TextAreaField('Description', validators=[DataRequired()])
     box_number = StringField('Box Number', validators=[Length(max=100), DataRequired()], render_kw={'list': 'box_number_datalist', 'autocomplete': 'off'})

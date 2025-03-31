@@ -11,7 +11,9 @@ from lbrc_flask.database import db
 # Load environment variables from '.env' file.
 load_dotenv()
 
-from phage_catalogue import *
+from phage_catalogue.model.specimens import *
+from phage_catalogue.model.uploads import *
+from phage_catalogue.model.specimens_audit import SpecimenAudit, BacteriumAudit, PhageAudit
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
