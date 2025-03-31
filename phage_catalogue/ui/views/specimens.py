@@ -174,6 +174,7 @@ def specimen_bacterium_edit(id=None):
 
     if form.validate_on_submit():
         specimen_bacterium_save(object, form.data)
+        db.session.commit()
         return refresh_response()
 
     return render_template(
@@ -198,6 +199,7 @@ def specimen_phage_edit(id=None):
 
     if form.validate_on_submit():
         specimen_phage_save(object, form.data)
+        db.session.commit()
         return refresh_response()
 
     return render_template(

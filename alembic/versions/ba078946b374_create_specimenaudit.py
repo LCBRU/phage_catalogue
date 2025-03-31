@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('storage_method', sa.String(length=100), nullable=False),
     sa.Column('staff_member', sa.String(length=100), nullable=False),
     sa.Column('audit_action', sa.String(length=200), nullable=False),
-    sa.Column('audit_updated_date', sa.Date(), nullable=False),
+    sa.Column('audit_updated_date', sa.DateTime(), nullable=False),
     sa.Column('audit_updated_by', sa.String(length=200), nullable=False),
     sa.Column('species', sa.String(length=100), nullable=True),
     sa.Column('strain', sa.String(length=100), nullable=True),

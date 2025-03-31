@@ -17,7 +17,7 @@ depends_on = None
 
 CREATE_TRIGGER = '''
 CREATE TRIGGER trg_specimen_audit_insert
-  BEFORE INSERT ON specimen
+  AFTER INSERT ON specimen
   FOR EACH ROW
     INSERT INTO specimen_audit (
         specimen_id,

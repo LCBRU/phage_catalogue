@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from lbrc_flask.database import db
 from lbrc_flask.model import CommonMixin
 from sqlalchemy.orm import Mapped, mapped_column
@@ -28,7 +28,7 @@ class SpecimenAudit(CommonMixin, db.Model):
     staff_member: Mapped[str] = mapped_column(String(100))
 
     audit_action: Mapped[str] = mapped_column(String(200))
-    audit_updated_date: Mapped[date] = mapped_column()
+    audit_updated_date: Mapped[datetime] = mapped_column()
     audit_updated_by: Mapped[str] = mapped_column(String(200))
 
 
