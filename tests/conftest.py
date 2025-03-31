@@ -11,7 +11,7 @@ from tests.faker import LookupProvider, SpecimenProvider, UploadProvider
 
 @pytest.fixture(scope="function")
 def standard_lookups(client, faker):
-    faker.create_standard_lookups()
+    return faker.create_standard_lookups()
 
 
 @pytest.fixture(scope="function")

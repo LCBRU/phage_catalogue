@@ -1,7 +1,8 @@
 from random import choice
 from faker.providers import BaseProvider
 from lbrc_flask.pytest.faker import FakeCreator
-
+from lbrc_flask.database import db
+from sqlalchemy import select
 from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, BoxNumber, Medium, Phage, PhageIdentifier, Plasmid, Project, ResistanceMarker, Specimen, StaffMember, StorageMethod, Strain
 from phage_catalogue.model.uploads import Upload
 from tests import convert_specimens_to_spreadsheet_data
@@ -39,7 +40,7 @@ class BacteriumFakeCreator(FakeCreator):
             resistance_marker = self.faker.resistance_marker().get_value_or_get(kwargs, 'resistance_marker', lookups_in_db),
             sample_date = kwargs.get('sample_date') or self.faker.date_object(),
             freezer = kwargs.get('freezer') or self.faker.random_int(),
-            drawer = kwargs.get('draw') or self.faker.random_int(),
+            drawer = kwargs.get('drawer') or self.faker.random_int(),
             position = kwargs.get('position') or self.faker.random_letter(),
             description = kwargs.get('description') or self.faker.sentence(),
             project = self.faker.project().get_value_or_get(kwargs, 'project', lookups_in_db),
@@ -145,6 +146,19 @@ class LookupProvider(BaseProvider):
             self.box_number().get_in_db(name=self.box_number_name(i))
             self.storage_method().get_in_db(name=self.storage_method_name(i))
             self.staff_member().get_in_db(name=self.staff_member_name(i))
+
+        return {
+            'bacterial_species': list(db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.id)).scalars()),
+            'strain': list(db.session.execute(select(Strain).order_by(Strain.id)).scalars()),
+            'medium': list(db.session.execute(select(Medium).order_by(Medium.id)).scalars()),
+            'plasmid': list(db.session.execute(select(Plasmid).order_by(Plasmid.id)).scalars()),
+            'resistance_marker': list(db.session.execute(select(ResistanceMarker).order_by(ResistanceMarker.id)).scalars()),
+            'phage_identifier': list(db.session.execute(select(PhageIdentifier).order_by(PhageIdentifier.id)).scalars()),
+            'project': list(db.session.execute(select(Project).order_by(Project.id)).scalars()),
+            'box_number': list(db.session.execute(select(BoxNumber).order_by(BoxNumber.id)).scalars()),
+            'storage_method': list(db.session.execute(select(StorageMethod).order_by(StorageMethod.id)).scalars()),
+            'staff_member': list(db.session.execute(select(StaffMember).order_by(StaffMember.id)).scalars()),
+        }
 
     def bacterial_species(self):
         return LookupFakeCreator(BacterialSpecies)
