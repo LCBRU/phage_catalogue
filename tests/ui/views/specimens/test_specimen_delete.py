@@ -1,14 +1,9 @@
-from datetime import date
 from random import choice
-import pytest
 from flask import url_for
 from lbrc_flask.pytest.asserts import assert__requires_login, assert__refresh_response
 from lbrc_flask.database import db
 from sqlalchemy import func, select
-from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, BoxNumber, Phage, PhageIdentifier, Project, StaffMember, StorageMethod
-from tests import convert_specimen_to_form_data, phage_form_lookup_names
-from tests.requests import phage_catalogue_modal_get
-from tests.ui.views.specimens import assert_actual_equals_expected_phage, assert_phage_form
+from phage_catalogue.model.specimens import Bacterium, Phage
 
 
 def _url(external=True, **kwargs):
