@@ -13,8 +13,10 @@
                 {{ render_form_fields(search_form) }}
 
                 <div class="button_bar">
-                    <a class="icon add" href="javascript:;" title="Add Bacterium" hx-get="{{ url_for('ui.specimen_bacterium_edit' ) }}" hx-target="body" hx-swap="beforeend" role="button">Add Bacterium</a>
-                    <a class="icon add" href="javascript:;" title="Add Phage" hx-get="{{ url_for('ui.specimen_phage_edit' ) }}" hx-target="body" hx-swap="beforeend" role="button">Add Phage</a>
+                    {% if current_user.is_editor %}
+                        <a class="icon add" href="javascript:;" title="Add Bacterium" hx-get="{{ url_for('ui.specimen_bacterium_edit' ) }}" hx-target="body" hx-swap="beforeend" role="button">Add Bacterium</a>
+                        <a class="icon add" href="javascript:;" title="Add Phage" hx-get="{{ url_for('ui.specimen_phage_edit' ) }}" hx-target="body" hx-swap="beforeend" role="button">Add Phage</a>
+                    {% endif %}
                 </div>
             </fieldset>
         </form>
@@ -34,8 +36,10 @@
                             {% set url = url_for('ui.specimen_phage_edit', id=s.id) %}
                         {% endif %}
 
-                        <a title="Edit {{s.phage}} #{{ s.id }}" href="javascript:;" hx-get="{{url}}" hx-target="body" hx-swap="beforeend" class="icon edit"></a>
-                        <a title="Delete {{s.type}} #{{ s.id }}" href="javascript:;" hx-post="{{ url_for('ui.specimen_delete', id=s.id) }}" hx-target="body" hx-swap="beforeend" class="icon delete" hx-confirm="Are you sure you want to delete {{s.type}} #{{s.id}}"></a>
+                        {% if current_user.is_editor %}
+                            <a title="Edit {{s.phage}} #{{ s.id }}" href="javascript:;" hx-get="{{url}}" hx-target="body" hx-swap="beforeend" class="icon edit"></a>
+                            <a title="Delete {{s.type}} #{{ s.id }}" href="javascript:;" hx-post="{{ url_for('ui.specimen_delete', id=s.id) }}" hx-target="body" hx-swap="beforeend" class="icon delete" hx-confirm="Are you sure you want to delete {{s.type}} #{{s.id}}"></a>
+                        {% endif %}
                     </nav>
                 </header>
 

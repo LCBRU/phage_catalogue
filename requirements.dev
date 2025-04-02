@@ -1,5 +1,1 @@
-pytest
-beautifulsoup4
 -e /home/richard/projects/lbrc_flask
-Faker
-pymysql

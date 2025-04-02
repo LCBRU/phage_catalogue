@@ -1,7 +1,7 @@
 from datetime import date
 import pytest
 from flask import url_for
-from lbrc_flask.pytest.asserts import assert__requires_login, assert__refresh_response
+from lbrc_flask.pytest.asserts import assert__requires_login, assert__refresh_response, assert__requires_role
 from lbrc_flask.database import db
 from sqlalchemy import func, select
 from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, BoxNumber, Medium, Plasmid, Project, ResistanceMarker, StaffMember, StorageMethod, Strain
@@ -75,12 +75,16 @@ def test__get__requires_login(client):
     assert__requires_login(client, _url(external=False))
 
 
+def test__get__requires_editor_login__not(client, loggedin_user):
+    assert__requires_role(client, _url(external=False))
+
+
 @pytest.mark.app_crsf(True)
-def test__get__has_form(client, loggedin_user, standard_lookups):
-    _get(client, _url(external=False), loggedin_user, has_form=True)
+def test__get__has_form(client, loggedin_user_editor, standard_lookups):
+    _get(client, _url(external=False), loggedin_user_editor, has_form=True)
 
 
-def test__post__valid_bacterium(client, faker, loggedin_user, standard_lookups):
+def test__post__valid_bacterium(client, faker, loggedin_user_editor, standard_lookups):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     
@@ -100,7 +104,7 @@ def test__post__valid_bacterium(client, faker, loggedin_user, standard_lookups):
 @pytest.mark.parametrize(
     "missing_column_name", bacterium_form_lookup_names() + ['species_id', 'freezer', 'drawer', 'position', 'name', 'description', 'sample_date'],
 )
-def test__post__missing_column(client, faker, loggedin_user, standard_lookups, missing_column_name):
+def test__post__missing_column(client, faker, loggedin_user_editor, standard_lookups, missing_column_name):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     data = convert_specimen_to_form_data(expected)
@@ -119,7 +123,7 @@ def test__post__missing_column(client, faker, loggedin_user, standard_lookups, m
 @pytest.mark.parametrize(
     "invalid_column_name", ['freezer', 'drawer'],
 )
-def test__post__invalid_column__integer(client, faker, loggedin_user, standard_lookups, invalid_column_name):
+def test__post__invalid_column__integer(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     data = convert_specimen_to_form_data(expected)
@@ -138,7 +142,7 @@ def test__post__invalid_column__integer(client, faker, loggedin_user, standard_l
 @pytest.mark.parametrize(
     "invalid_column_name", ['sample_date'],
 )
-def test__post__invalid_column__date(client, faker, loggedin_user, standard_lookups, invalid_column_name):
+def test__post__invalid_column__date(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     data = convert_specimen_to_form_data(expected)
@@ -157,7 +161,7 @@ def test__post__invalid_column__date(client, faker, loggedin_user, standard_look
 @pytest.mark.parametrize(
     "invalid_column_name", ['species_id'],
 )
-def test__post__invalid_column__select_value(client, faker, loggedin_user, standard_lookups, invalid_column_name):
+def test__post__invalid_column__select_value(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     data = convert_specimen_to_form_data(expected)
@@ -176,7 +180,7 @@ def test__post__invalid_column__select_value(client, faker, loggedin_user, stand
 @pytest.mark.parametrize(
     "invalid_column_name", ['species_id'],
 )
-def test__post__invalid_column__select_non_existent(client, faker, loggedin_user, standard_lookups, invalid_column_name):
+def test__post__invalid_column__select_non_existent(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     data = convert_specimen_to_form_data(expected)
@@ -195,7 +199,7 @@ def test__post__invalid_column__select_non_existent(client, faker, loggedin_user
 @pytest.mark.parametrize(
     "invalid_column_name", bacterium_form_lookup_names() + ['name', 'position'],
 )
-def test__post__invalid_column__string_length(client, faker, loggedin_user, standard_lookups, invalid_column_name):
+def test__post__invalid_column__string_length(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
     original = original_bacterium(faker, standard_lookups)
     expected = updater_bacterium(faker, standard_lookups)
     data = convert_specimen_to_form_data(expected)
@@ -211,7 +215,7 @@ def test__post__invalid_column__string_length(client, faker, loggedin_user, stan
     assert db.session.execute(select(func.count(Bacterium.id))).scalar() == 1
 
 
-def test__post__new_lookup_values(client, faker, loggedin_user, standard_lookups):
+def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_lookups):
     original = original_bacterium(faker, standard_lookups)
 
     expected: Bacterium = faker.bacterium().get(

@@ -1,4 +1,5 @@
 from phage_catalogue.model.specimens import Bacterium, Phage, Specimen
+from phage_catalogue.security import ROLENAME_EDITOR
 from phage_catalogue.services.lookups import get_bacterial_species_choices, get_box_number_datalist_choices, get_medium_datalist_choices, get_phage_identifier_datalist_choices, get_plasmid_datalist_choices, get_project_datalist_choices, get_resistance_marker_datalist_choices, get_staff_member_datalist_choices, get_storage_method_datalist_choices, get_strain_datalist_choices
 from phage_catalogue.services.specimens import get_type_choices, specimen_bacterium_save, specimen_phage_save, specimen_search_query
 from .. import blueprint
@@ -10,6 +11,7 @@ from lbrc_flask.forms import FlashingForm, DataListField
 from lbrc_flask.response import refresh_response
 from wtforms.validators import Length, DataRequired
 from sqlalchemy.orm import selectinload
+from flask_security.decorators import roles_accepted
 
 
 class SpecimenSearchForm(SearchForm):
@@ -159,9 +161,9 @@ def specimen_details(id, detail_selector):
         detail_selector=detail_selector,
     )
 
-
 @blueprint.route("/specimen/bacterium/add/", methods=['GET', 'POST'])
 @blueprint.route("/specimen/bacterium/edit/<int:id>", methods=['GET', 'POST'])
+@roles_accepted(ROLENAME_EDITOR)
 def specimen_bacterium_edit(id=None):
     if id:
         object = db.get_or_404(Bacterium, id)
@@ -187,6 +189,7 @@ def specimen_bacterium_edit(id=None):
 
 @blueprint.route("/specimen/phage/add/", methods=['GET', 'POST'])
 @blueprint.route("/specimen/phage/edit/<int:id>", methods=['GET', 'POST'])
+@roles_accepted(ROLENAME_EDITOR)
 def specimen_phage_edit(id=None):
     if id:
         object = db.get_or_404(Phage, id)
@@ -211,6 +214,7 @@ def specimen_phage_edit(id=None):
 
 
 @blueprint.route("/specimen/delete/<int:id>", methods=['POST'])
+@roles_accepted(ROLENAME_EDITOR)
 def specimen_delete(id):
     specimen = db.get_or_404(Specimen, id)
     db.session.delete(specimen)

@@ -1,5 +1,6 @@
 from flask_wtf.file import FileRequired
 from phage_catalogue.model.uploads import Upload
+from phage_catalogue.security import ROLENAME_UPLOADER
 from phage_catalogue.services.uploads import upload_save, upload_search_query
 from .. import blueprint
 from flask import render_template, request, url_for
@@ -7,6 +8,7 @@ from lbrc_flask.forms import SearchForm
 from lbrc_flask.database import db
 from lbrc_flask.forms import FlashingForm, FileField
 from lbrc_flask.response import refresh_response
+from flask_security.decorators import roles_accepted
 
 
 class UploadForm(FlashingForm):
@@ -18,6 +20,7 @@ class UploadForm(FlashingForm):
 
 
 @blueprint.route("/uploads/")
+@roles_accepted(ROLENAME_UPLOADER)
 def uploads_index():
     search_form = SearchForm(formdata=request.args, search_placeholder='Search uploads')
 
@@ -34,6 +37,7 @@ def uploads_index():
 
 
 @blueprint.route("/uploads/upload", methods=['GET', 'POST'])
+@roles_accepted(ROLENAME_UPLOADER)
 def uploads_upload(id=None):
     form = UploadForm()
     title = f"Upload Sample File"

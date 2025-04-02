@@ -8,7 +8,7 @@ def phage_catalogue_get(client, url, user, has_form=False):
 
     assert resp.soup.nav is not None
     assert resp.soup.nav.find("a", href=url_for('ui.index'), string=re.compile("Specimens")) is not None
-    assert resp.soup.nav.find("a", href=url_for('ui.uploads_index'), string=re.compile("Uploads")) is not None
+    # assert resp.soup.nav.find("a", href=url_for('ui.uploads_index'), string=re.compile("Uploads")) is not None
 
     return resp
 

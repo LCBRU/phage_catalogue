@@ -2,7 +2,6 @@
 
 from dotenv import load_dotenv
 from lbrc_flask.database import db
-from lbrc_flask.security import init_roles, init_users
 from alembic.config import Config
 from alembic import command
 from phage_catalogue.model.specimens_audit import *
@@ -11,6 +10,7 @@ from phage_catalogue.model.lookups import *
 from phage_catalogue.model.uploads import *
 from faker import Faker
 from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider
+from phage_catalogue.security import init_authorization
 from tests.faker import LookupProvider, SpecimenProvider, UploadProvider
 
 
@@ -29,8 +29,7 @@ from phage_catalogue import create_app
 application = create_app()
 application.app_context().push()
 db.create_all()
-init_roles([])
-init_users()
+init_authorization()
 
 alembic_cfg = Config("alembic.ini")
 command.stamp(alembic_cfg, "head")

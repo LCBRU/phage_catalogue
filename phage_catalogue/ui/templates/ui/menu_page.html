@@ -6,7 +6,9 @@
     <div class="container">
       <menu>
         <li><a href="{{url_for('ui.index')}}" icon="icon home">Specimens</a></li>
-        <li><a href="{{url_for('ui.uploads_index')}}" icon="icon home">Uploads</a></li>
+        {% if current_user.is_uploader %}
+          <li><a href="{{url_for('ui.uploads_index')}}" icon="icon home">Uploads</a></li>
+        {% endif %}
       </menu>
       <menu>
         {% if current_user.is_admin %}

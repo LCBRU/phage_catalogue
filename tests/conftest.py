@@ -6,6 +6,7 @@ from phage_catalogue.config import TestConfig
 from phage_catalogue import create_app
 from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider, LbrcFileProvider
 from lbrc_flask.pytest.helpers import login
+from phage_catalogue.security import ROLENAME_EDITOR, ROLENAME_UPLOADER, init_authorization
 from tests.faker import LookupProvider, SpecimenProvider, UploadProvider
 
 
@@ -16,7 +17,24 @@ def standard_lookups(client, faker):
 
 @pytest.fixture(scope="function")
 def loggedin_user(client, faker):
+    init_authorization()
     return login(client, faker)
+
+
+@pytest.fixture(scope="function")
+def loggedin_user_editor(client, faker):
+    init_authorization()
+
+    user = faker.get_test_user(rolename=ROLENAME_EDITOR)
+    return login(client, faker, user)
+
+
+@pytest.fixture(scope="function")
+def loggedin_user_uploader(client, faker):
+    init_authorization()
+
+    user = faker.get_test_user(rolename=ROLENAME_UPLOADER)
+    return login(client, faker, user)
 
 
 @pytest.fixture(scope="function")
