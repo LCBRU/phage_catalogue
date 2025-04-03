@@ -22,7 +22,7 @@ class UploadForm(FlashingForm):
 @blueprint.route("/uploads/")
 @roles_accepted(ROLENAME_UPLOADER)
 def uploads_index():
-    search_form = SearchForm(formdata=request.args, search_placeholder='Search uploads')
+    search_form = SearchForm(formdata=request.args, search_placeholder='Search upload filenames')
 
     q = upload_search_query(search_form.data)
     q = q.order_by(Upload.created_date.desc())
