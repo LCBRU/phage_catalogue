@@ -122,7 +122,7 @@ class EditPhageForm(EditSpecimenForm):
 
 @blueprint.route("/")
 def index():
-    search_form = SpecimenSearchForm(formdata=request.args, search_placeholder='Search specimens')
+    search_form = SpecimenSearchForm(formdata=request.args, search_placeholder='Search specimen names, notes or descriptions')
 
     q = specimen_search_query(search_form.data)
 
