@@ -6,7 +6,7 @@ from lbrc_flask.admin import AdminCustomView, init_admin as flask_init_admin
 
 class UserView(AdminCustomView):
     column_list = ["username", "first_name", "last_name", "active", "roles"]
-    form_columns = ["username", "roles"]
+    form_columns = ["username", "email", "roles", "active"]
 
     # form_args and form_overrides required to allow roles to be sets.
     form_args = {
