@@ -96,7 +96,7 @@ class UploadFakeCreator(FakeCreator):
 
     def get(self, **kwargs):
         return self.cls(
-            filename = kwargs.get('filename') or self.faker.file_name(extension='xslx'),
+            filename = kwargs.get('filename') or self.faker.unique.file_name(extension='xslx'),
             status = kwargs.get('status') or choice(Upload.STATUS_NAMES),
             errors = kwargs.get('errors') or '\n'.join([self.faker.sentence() for _ in range(5)]),
         )

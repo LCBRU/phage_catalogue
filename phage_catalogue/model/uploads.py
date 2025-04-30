@@ -222,9 +222,13 @@ class PhageOnlyColumnDefinition(ColumnsDefinition):
 
 class SpecimenFullColumnDefinition(ColumnsDefinition):
     def __init__(self, cls, bacterial_species_name):
+        super().__init__()
         self.cls = cls
         self.bacterial_species_name = bacterial_species_name
     
+    def row_filter(self, spreadsheet):
+        return self.rows_with_all_fields(spreadsheet)
+
     def data_validation_errors(self, spreadsheet):
         errors = []
 
@@ -273,14 +277,6 @@ class BacteriumFullColumnDefinition(SpecimenFullColumnDefinition):
         result.extend(BacteriumOnlyColumnDefinition().column_definition)
 
         return result
-
-    def data_validation_errors(self, spreadsheet):
-        errors = []
-
-        errors.extend(super().data_validation_errors(spreadsheet))
-        errors.extend(self._bacterial_species_errors(spreadsheet))
-
-        return errors
 
 
 class PhageFullColumnDefinition(SpecimenFullColumnDefinition):
