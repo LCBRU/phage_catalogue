@@ -14,4 +14,4 @@ class Config(BaseConfig, ConfigMixin):
     pass
 
 class TestConfig(BaseTestConfig, ConfigMixin):
-    FILE_UPLOAD_DIRECTORY = Path(os.environ["FILE_UPLOAD_DIRECTORY"]) / 'test'
+    pass

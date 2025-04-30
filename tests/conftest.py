@@ -3,10 +3,10 @@ import shutil
 import pytest
 from faker import Faker
 from lbrc_flask.pytest.fixtures import *
-from phage_catalogue.config import TestConfig
 from phage_catalogue import create_app
 from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider, LbrcFileProvider
 from lbrc_flask.pytest.helpers import login
+from phage_catalogue.config import TestConfig
 from phage_catalogue.security import ROLENAME_EDITOR, ROLENAME_UPLOADER, init_authorization
 from tests.faker import LookupProvider, SpecimenProvider, UploadProvider
 
@@ -40,9 +40,10 @@ def loggedin_user_uploader(client, faker):
 
 @pytest.fixture(scope="function")
 def app(tmp_path):
-    os.environ["FILE_UPLOAD_DIRECTORY"] = str(tmp_path)
+    class LocalTestConfig(TestConfig):
+        FILE_UPLOAD_DIRECTORY = tmp_path
 
-    yield create_app(TestConfig)
+    yield create_app(LocalTestConfig)
 
 
 @pytest.fixture(scope="function")
