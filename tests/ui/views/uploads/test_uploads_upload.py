@@ -73,6 +73,7 @@ def test__get__has_form(client, loggedin_user_uploader):
 @pytest.mark.parametrize(
     "data_source", ["bacteria", "phages", "specimens"],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__valid_file__insert(client, faker, loggedin_user_uploader, standard_lookups, data_source):
     match data_source:
         case 'bacteria':
@@ -101,6 +102,7 @@ def test__post__valid_file__insert(client, faker, loggedin_user_uploader, standa
 @pytest.mark.parametrize(
     "data_source", ["bacteria", "phages", "specimens"],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__valid_file__update(client, faker, loggedin_user_uploader, standard_lookups, data_source):
     rows = 10
     match data_source:
@@ -144,6 +146,7 @@ def test__post__valid_file__update(client, faker, loggedin_user_uploader, standa
 @pytest.mark.parametrize(
     "missing_column_name", UploadColumnDefinition().column_names,
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__missing_column(client, faker, loggedin_user_uploader, standard_lookups, missing_column_name):
     columns_to_include = set(UploadColumnDefinition().column_names) - set([missing_column_name])
 
@@ -163,6 +166,7 @@ def test__post__missing_column(client, faker, loggedin_user_uploader, standard_l
 @pytest.mark.parametrize(
     "casing", ['lower', 'upper', 'title'],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__case_insenstive_column_names(client, faker, loggedin_user_uploader, standard_lookups, casing):
     match casing:
         case 'lower':
@@ -193,6 +197,7 @@ def test__post__case_insenstive_column_names(client, faker, loggedin_user_upload
 @pytest.mark.parametrize(
     "invalid_column", ['freezer', 'drawer', 'date'],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__invalid_column_type(client, faker, loggedin_user_uploader, standard_lookups, invalid_column):
     data = faker.specimen_spreadsheet_data(rows=1)
     data[0][invalid_column] = faker.pystr()
@@ -210,6 +215,7 @@ def test__post__invalid_column_type(client, faker, loggedin_user_uploader, stand
 @pytest.mark.parametrize(
     "invalid_column", ['position', 'box_number', 'bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker', 'project', 'storage method'],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__invalid_column_length_bacterium(client, faker, loggedin_user_uploader, standard_lookups, invalid_column):
     max_length = UploadColumnDefinition().definition_for_column_name(invalid_column).max_length
 
@@ -229,6 +235,7 @@ def test__post__invalid_column_length_bacterium(client, faker, loggedin_user_upl
 @pytest.mark.parametrize(
     "invalid_column", ['position', 'box_number', 'phage id', 'host species', 'project', 'storage method'],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__invalid_column_length_phage(client, faker, loggedin_user_uploader, standard_lookups, invalid_column):
     max_length = UploadColumnDefinition().definition_for_column_name(invalid_column).max_length
 
@@ -248,6 +255,7 @@ def test__post__invalid_column_length_phage(client, faker, loggedin_user_uploade
 @pytest.mark.parametrize(
     "added_column", ['bacterial species', 'strain', 'media', 'plasmid name', 'resistance marker'],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__phage_with_bacteria_data(client, faker, loggedin_user_uploader, standard_lookups, added_column):
     data = faker.phage_spreadsheet_data(rows=1)
     data[0][added_column] = faker.pystr(min_chars=1, max_chars=5)
@@ -265,6 +273,7 @@ def test__post__phage_with_bacteria_data(client, faker, loggedin_user_uploader, 
 @pytest.mark.parametrize(
     "added_column", ['phage id', 'host species'],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__bacterium_with_phage_data(client, faker, loggedin_user_uploader, standard_lookups, added_column):
     data = faker.bacteria_spreadsheet_data(rows=1)
     data[0][added_column] = faker.pystr(min_chars=1, max_chars=5)
@@ -285,6 +294,7 @@ def test__post__bacterium_with_phage_data(client, faker, loggedin_user_uploader,
 @pytest.mark.parametrize(
     "value", ['', None, ' '],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__phage_with_missing_data(client, faker, loggedin_user_uploader, standard_lookups, missing_data, value):
     data = faker.phage_spreadsheet_data(rows=1)
     data[0][missing_data] = value
@@ -305,6 +315,7 @@ def test__post__phage_with_missing_data(client, faker, loggedin_user_uploader, s
 @pytest.mark.parametrize(
     "value", ['', None, ' '],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__bacterium_with_missing_data(client, faker, loggedin_user_uploader, standard_lookups, missing_data, value):
     data = faker.bacteria_spreadsheet_data(rows=1)
     data[0][missing_data] = value
@@ -322,6 +333,7 @@ def test__post__bacterium_with_missing_data(client, faker, loggedin_user_uploade
 @pytest.mark.parametrize(
     "data_source", ["bacteria", "phages"],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__specimen__key_does_not_exist(client, faker, loggedin_user_uploader, standard_lookups, data_source):
     match data_source:
         case 'bacteria':
@@ -344,6 +356,7 @@ def test__post__specimen__key_does_not_exist(client, faker, loggedin_user_upload
 @pytest.mark.parametrize(
     "data_source", ["bacteria", "phages"],
 )
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__specimen__key_for_wrong_type_of_specimen(client, faker, loggedin_user_uploader, standard_lookups, data_source):
     match data_source:
         case 'bacteria':
@@ -365,6 +378,7 @@ def test__post__specimen__key_for_wrong_type_of_specimen(client, faker, loggedin
     )
 
 
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__bacterium__invalid_species(client, faker, loggedin_user_uploader, standard_lookups):
     data = faker.bacteria_spreadsheet_data(rows=1)
     data[0]['bacterial species'] = 'This doesnt exist'
@@ -379,6 +393,7 @@ def test__post__bacterium__invalid_species(client, faker, loggedin_user_uploader
     )
 
 
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__phage__invalid_host(client, faker, loggedin_user_uploader, standard_lookups):
     data = faker.phage_spreadsheet_data(rows=1)
     data[0]['host species'] = 'This doesnt exist'
@@ -393,6 +408,7 @@ def test__post__phage__invalid_host(client, faker, loggedin_user_uploader, stand
     )
 
 
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__new_lookup_values__bacterium(client, faker, loggedin_user_uploader):
     data = convert_specimens_to_spreadsheet_data([faker.bacterium().get(
         species=faker.bacterial_species().get_in_db(),
@@ -421,6 +437,7 @@ def test__post__new_lookup_values__bacterium(client, faker, loggedin_user_upload
     assert db.session.execute(select(func.count(BoxNumber.id)).where(BoxNumber.name == expected['box_number'])).scalar() == 1
 
 
+@pytest.mark.xdist_group(name="spreadsheets")
 def test__post__new_lookup_values__phage(client, faker, loggedin_user_uploader):
     data = convert_specimens_to_spreadsheet_data([faker.phage().get(
         host=faker.bacterial_species().get_in_db(),

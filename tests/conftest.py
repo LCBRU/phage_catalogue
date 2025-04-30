@@ -1,3 +1,4 @@
+import os
 import shutil
 import pytest
 from faker import Faker
@@ -38,10 +39,10 @@ def loggedin_user_uploader(client, faker):
 
 
 @pytest.fixture(scope="function")
-def app():
-    yield create_app(TestConfig)
+def app(tmp_path):
+    os.environ["FILE_UPLOAD_DIRECTORY"] = str(tmp_path)
 
-    shutil.rmtree(TestConfig().FILE_UPLOAD_DIRECTORY, ignore_errors=True)
+    yield create_app(TestConfig)
 
 
 @pytest.fixture(scope="function")
