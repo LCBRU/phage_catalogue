@@ -4,7 +4,7 @@ import pytest
 from faker import Faker
 from lbrc_flask.pytest.fixtures import *
 from phage_catalogue import create_app
-from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider, LbrcFileProvider
+from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider, LbrcFileProvider, UserProvider
 from lbrc_flask.pytest.helpers import login
 from phage_catalogue.config import TestConfig
 from phage_catalogue.security import ROLENAME_EDITOR, ROLENAME_UPLOADER, init_authorization
@@ -48,11 +48,12 @@ def app(tmp_path):
 
 @pytest.fixture(scope="function")
 def faker():
-    result = Faker("en_GB")
+    result: Faker = Faker("en_GB")
+    result.add_provider(UserProvider)
     result.add_provider(LbrcFlaskFakerProvider)
     result.add_provider(LbrcFileProvider)
     result.add_provider(LookupProvider)
     result.add_provider(SpecimenProvider)
-    result.add_provider(UploadProvider)    
+    result.add_provider(UploadProvider)
 
     yield result

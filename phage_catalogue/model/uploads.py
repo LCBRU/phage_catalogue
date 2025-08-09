@@ -3,7 +3,7 @@ from flask import current_app
 from lbrc_flask.database import db
 from lbrc_flask.security import AuditMixin
 from lbrc_flask.model import CommonMixin
-from lbrc_flask.column_data import ColumnDefinition, ColumnsDefinition, ExcelData
+from lbrc_flask.column_data import ColumnsDefinition, ExcelData, IntegerColumnDefinition, StringColumnDefinition, DateColumnDefinition
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Text, select
 from werkzeug.utils import secure_filename
@@ -106,61 +106,49 @@ class SpecimenColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         return [
-            ColumnDefinition(
+            IntegerColumnDefinition(
                 name='key',
-                type=ColumnDefinition.COLUMN_TYPE_INTEGER,
                 allow_null=True,
             ),
-            ColumnDefinition(
+            IntegerColumnDefinition(
                 name='freezer',
-                type=ColumnDefinition.COLUMN_TYPE_INTEGER,
             ),
-            ColumnDefinition(
+            IntegerColumnDefinition(
                 name='drawer',
-                type=ColumnDefinition.COLUMN_TYPE_INTEGER,
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='box_number',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='position',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=20,
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='description',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='project',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
             ),
-            ColumnDefinition(
+            DateColumnDefinition(
                 name='date',
-                type=ColumnDefinition.COLUMN_TYPE_DATE,
                 translated_name='sample_date',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='storage method',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='storage_method',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='name',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='staff member',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 translated_name='staff_member',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='notes',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
             ),
         ]
 
@@ -169,32 +157,27 @@ class BacteriumOnlyColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         return [
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='bacterial species',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='species',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='strain',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='media',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='medium',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='plasmid name',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='plasmid',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='resistance marker',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='resistance_marker',
             ),
@@ -205,15 +188,13 @@ class PhageOnlyColumnDefinition(ColumnsDefinition):
     @property
     def column_definition(self):
         return [
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='phage id',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='phage_identifier',
             ),
-            ColumnDefinition(
+            StringColumnDefinition(
                 name='host species',
-                type=ColumnDefinition.COLUMN_TYPE_STRING,
                 max_length=100,
                 translated_name='host',
             ),
