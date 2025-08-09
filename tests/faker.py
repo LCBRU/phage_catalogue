@@ -212,7 +212,7 @@ class UploadProvider(BaseProvider):
         for _ in range(rows):
             b = self.generator.bacterium().get()
             result.append(b)
-        
+
         return convert_specimens_to_spreadsheet_data(result)
 
     def phage_spreadsheet_data(self, rows=10):

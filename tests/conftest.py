@@ -41,7 +41,9 @@ def loggedin_user_uploader(client, faker):
 @pytest.fixture(scope="function")
 def app(tmp_path):
     class LocalTestConfig(TestConfig):
-        FILE_UPLOAD_DIRECTORY = tmp_path
+        # FILE_UPLOAD_DIRECTORY = tmp_path
+        # FILE_UPLOAD_DIRECTORY = 'upload'
+        pass
 
     yield create_app(LocalTestConfig)
 

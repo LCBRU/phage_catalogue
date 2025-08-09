@@ -3,7 +3,7 @@ from flask import current_app
 from lbrc_flask.database import db
 from lbrc_flask.security import AuditMixin
 from lbrc_flask.model import CommonMixin
-from lbrc_flask.column_data import ColumnsDefinition, ExcelData, IntegerColumnDefinition, StringColumnDefinition, DateColumnDefinition
+from lbrc_flask.column_data import ColumnsDefinition, ExcelData, IntegerColumnDefinition, StringColumnDefinition, DateColumnDefinition, ColumnsDefinitionValidationMessage
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Text, select
 from werkzeug.utils import secure_filename
@@ -38,7 +38,7 @@ class Upload(AuditMixin, CommonMixin, db.Model):
         errors = upload_column_definition.validation_errors(spreadsheet)
 
         if errors:
-            self.errors = "\n".join(errors)
+            self.errors = "\n".join([e.full_message for e in errors])
             self.status = Upload.STATUS__ERROR
 
     @property
@@ -85,7 +85,11 @@ class UploadColumnDefinition(ColumnsDefinition):
             PhageFullColumnDefinition().rows_with_all_fields(spreadsheet),
             ), 1):
             if not(phage or baceterium):
-                result.append(f"Row {i}: does not contain enough information")
+                result.append(ColumnsDefinitionValidationMessage(
+                    type=ColumnsDefinitionValidationMessage.TYPE__ERROR,
+                    row=i,
+                    message="does not contain enough information"
+                ))
 
         return result
 
@@ -97,7 +101,11 @@ class UploadColumnDefinition(ColumnsDefinition):
             PhageOnlyColumnDefinition().rows_with_any_fields(spreadsheet),
             ), 1):
             if bacterium and phage:
-                result.append(f"Row {i}: contains columns for both bacteria and phages")
+                result.append(ColumnsDefinitionValidationMessage(
+                    type=ColumnsDefinitionValidationMessage.TYPE__ERROR,
+                    row=i,
+                    message="contains columns for both bacteria and phages"
+                ))
         
         return result
     
@@ -227,10 +235,18 @@ class SpecimenFullColumnDefinition(ColumnsDefinition):
                 existing = db.session.get(Specimen, key)
 
                 if existing is None:
-                    errors.append(f"Row {i}: Key does not exist")
+                    errors.append(ColumnsDefinitionValidationMessage(
+                    type=ColumnsDefinitionValidationMessage.TYPE__ERROR,
+                    row=i,
+                    message="Key does not exist"
+                ))
                 
                 if not isinstance(existing, self.cls):
-                    errors.append(f"Row {i}: Key is for the wrong type of specimen")
+                    errors.append(ColumnsDefinitionValidationMessage(
+                        type=ColumnsDefinitionValidationMessage.TYPE__ERROR,
+                        row=i,
+                        message="Key is for the wrong type of specimen"
+                    ))
 
         return errors
 
@@ -242,7 +258,11 @@ class SpecimenFullColumnDefinition(ColumnsDefinition):
                 existing = db.session.execute(select(BacterialSpecies).where(BacterialSpecies.name == bacterial_species_name)).scalar_one_or_none()
 
                 if existing is None:
-                    errors.append(f"Row {i}: {self.bacterial_species_name.title()} does not exist")
+                    errors.append(ColumnsDefinitionValidationMessage(
+                        type=ColumnsDefinitionValidationMessage.TYPE__ERROR,
+                        row=i,
+                        message=f"{self.bacterial_species_name.title()} does not exist"
+                    ))
 
         return errors
 
