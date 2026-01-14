@@ -1,6 +1,7 @@
+from functools import cache
 from random import choice
 from faker.providers import BaseProvider
-from lbrc_flask.pytest.faker import FakeCreator
+from lbrc_flask.pytest.faker import FakeCreator, FakeCreatorArgs, LookupFakeCreator
 from lbrc_flask.database import db
 from sqlalchemy import select
 from phage_catalogue.model.specimens import BacterialSpecies, Bacterium, BoxNumber, Medium, Phage, PhageIdentifier, Plasmid, Project, ResistanceMarker, Specimen, StaffMember, StorageMethod, Strain
@@ -8,97 +9,78 @@ from phage_catalogue.model.uploads import Upload
 from tests import convert_specimens_to_spreadsheet_data
 
 
-class LookupFakeCreator(FakeCreator):
-    def get(self, **kwargs):
-        result = self.cls(
-            name=kwargs.get('name', self.faker.pystr(min_chars=1, max_chars=100))
-        )
-
-        return result
-    
-    def get_value_or_get(self, source, key, from_db):
-        if key in source:
-            return source[key]
-        elif from_db:
-            return self.choice_from_db()
-        else:
-            return self.get()
-
-
 class BacteriumFakeCreator(FakeCreator):
-    def __init__(self):
-        super().__init__(Bacterium)
+    cls = Bacterium
 
-    def get(self, lookups_in_db=True, **kwargs):
-        self.faker.add_provider(LookupProvider)
+    def _create_item(self, save: bool, args: FakeCreatorArgs):
+
+        lookups_in_db = args.get('lookups_in_db', True)
 
         result = self.cls(
-            species =  self.faker.bacterial_species().get_value_or_get(kwargs, 'species', lookups_in_db),
-            strain = self.faker.strain().get_value_or_get(kwargs, 'strain', lookups_in_db),
-            medium = self.faker.medium().get_value_or_get(kwargs, 'medium', lookups_in_db),
-            plasmid = self.faker.plasmid().get_value_or_get(kwargs, 'plasmid', lookups_in_db),
-            resistance_marker = self.faker.resistance_marker().get_value_or_get(kwargs, 'resistance_marker', lookups_in_db),
-            sample_date = kwargs.get('sample_date') or self.faker.date_object(),
-            freezer = kwargs.get('freezer') or self.faker.random_int(),
-            drawer = kwargs.get('drawer') or self.faker.random_int(),
-            position = kwargs.get('position') or self.faker.random_letter(),
-            description = kwargs.get('description') or self.faker.sentence(),
-            project = self.faker.project().get_value_or_get(kwargs, 'project', lookups_in_db),
-            box_number = self.faker.box_number().get_value_or_get(kwargs, 'box_number', lookups_in_db),
-            storage_method = self.faker.storage_method().get_value_or_get(kwargs, 'storage_method', lookups_in_db),
-            staff_member = self.faker.staff_member().get_value_or_get(kwargs, 'staff_member', lookups_in_db),
-            notes = kwargs.get('notes') or self.faker.paragraph(),
-            name = kwargs.get('name') or f"Bacterium: {self.faker.pystr()}",
+            species = args.get_or_get_from_creator('species', self.faker.bacterial_species(), lookups_in_db),
+            strain = args.get_or_get_from_creator('strain', self.faker.strain(), lookups_in_db),
+            medium = args.get_or_get_from_creator('medium', self.faker.medium(), lookups_in_db),
+            plasmid = args.get_or_get_from_creator('plasmid', self.faker.plasmid(), lookups_in_db),
+            resistance_marker = args.get_or_get_from_creator('resistance_marker', self.faker.resistance_marker(), lookups_in_db),
+            sample_date = args.get('sample_date', self.faker.date_object()),
+            freezer = args.get('freezer', self.faker.random_int()),
+            drawer = args.get('drawer', self.faker.random_int()),
+            position = args.get('position', self.faker.random_letter()),
+            description = args.get('description', self.faker.sentence()),
+            project = args.get_or_get_from_creator('project', self.faker.project(), lookups_in_db),
+            box_number = args.get_or_get_from_creator('box_number', self.faker.box_number(), lookups_in_db),
+            storage_method = args.get_or_get_from_creator('storage_method', self.faker.storage_method(), lookups_in_db),
+            staff_member = args.get_or_get_from_creator('staff_member', self.faker.staff_member(), lookups_in_db),
+            notes = args.get('notes', self.faker.paragraph()),
+            name = args.get('name', f"Bacterium: {self.faker.pystr()}"),
         )
 
         return result
 
 
 class PhageFakeCreator(FakeCreator):
-    def __init__(self):
-        super().__init__(Phage)
+    cls = Phage
 
-    def get(self, lookups_in_db=True, **kwargs):
-        self.faker.add_provider(LookupProvider)
+    def _create_item(self, save: bool, args: FakeCreatorArgs):
+
+        lookups_in_db = args.get('lookups_in_db', True)
 
         result = self.cls(
-            phage_identifier = self.faker.phage_identifier().get_value_or_get(kwargs, 'phage_identifier', lookups_in_db),
-            host = self.faker.bacterial_species().get_value_or_get(kwargs, 'host', lookups_in_db),
-            sample_date = kwargs.get('sample_date') or self.faker.date_object(),
-            freezer = kwargs.get('freezer') or self.faker.random_int(),
-            drawer = kwargs.get('draw') or self.faker.random_int(),
-            position = kwargs.get('position') or self.faker.random_letter(),
-            description = kwargs.get('description') or self.faker.sentence(),
-            project = self.faker.project().get_value_or_get(kwargs, 'project', lookups_in_db),
-            box_number = self.faker.box_number().get_value_or_get(kwargs, 'box_number', lookups_in_db),
-            storage_method = self.faker.storage_method().get_value_or_get(kwargs, 'storage_method', lookups_in_db),
-            staff_member = self.faker.staff_member().get_value_or_get(kwargs, 'staff_member', lookups_in_db),
-            notes = kwargs.get('notes') or self.faker.paragraph(),
-            name = kwargs.get('name') or f"Phage: {self.faker.pystr()}",
+            phage_identifier = args.get_or_get_from_creator('phage_identifier', self.faker.phage_identifier(), lookups_in_db),
+            host = args.get_or_get_from_creator('host', self.faker.bacterial_species(), lookups_in_db),
+            sample_date = args.get('sample_date', self.faker.date_object()),
+            freezer = args.get('freezer', self.faker.random_int()),
+            drawer = args.get('draw', self.faker.random_int()),
+            position = args.get('position', self.faker.random_letter()),
+            description = args.get('description', self.faker.sentence()),
+            project = args.get_or_get_from_creator('project', self.faker.project(), lookups_in_db),
+            box_number = args.get_or_get_from_creator('box_number', self.faker.box_number(), lookups_in_db),
+            storage_method = args.get_or_get_from_creator('storage_method', self.faker.storage_method(), lookups_in_db),
+            staff_member = args.get_or_get_from_creator('staff_member', self.faker.staff_member(), lookups_in_db),
+            notes = args.get('notes', self.faker.paragraph()),
+            name = args.get('name', f"Bacterium: {self.faker.pystr()}"),
         )
 
         return result
 
 
 class SpecimenFakeCreator(FakeCreator):
-    def __init__(self):
-        super().__init__(Specimen)
+    cls = Specimen
 
-    def get(self, **kwargs):
+    def _create_item(self, save: bool, args: FakeCreatorArgs):
         creator_cls = choice([BacteriumFakeCreator, PhageFakeCreator])
         creator = creator_cls()
-        return creator.get(**kwargs)
+        return creator._create_item(save, args)
 
 
 class UploadFakeCreator(FakeCreator):
-    def __init__(self):
-        super().__init__(Upload)
+    cls = Upload
 
-    def get(self, **kwargs):
+    def _create_item(self, save: bool, args: FakeCreatorArgs):
         return self.cls(
-            filename = kwargs.get('filename') or self.faker.unique.file_name(extension='xslx'),
-            status = kwargs.get('status') or choice(Upload.STATUS_NAMES),
-            errors = kwargs.get('errors') or '\n'.join([self.faker.sentence() for _ in range(5)]),
+            filename = args.get('filename', self.faker.unique.file_name(extension='xslx')),
+            status = args.get('status', choice(Upload.STATUS_NAMES)),
+            errors = args.get('errors', '\n'.join([self.faker.sentence() for _ in range(5)])),
         )
 
 
@@ -160,51 +142,65 @@ class LookupProvider(BaseProvider):
             'staff_member': list(db.session.execute(select(StaffMember).order_by(StaffMember.id)).scalars()),
         }
 
+    @cache
     def bacterial_species(self):
-        return LookupFakeCreator(BacterialSpecies)
+        return LookupFakeCreator(self, BacterialSpecies)
 
+    @cache
     def strain(self):
-        return LookupFakeCreator(Strain)
+        return LookupFakeCreator(self, Strain)
 
+    @cache
     def medium(self):
-        return LookupFakeCreator(Medium)
+        return LookupFakeCreator(self, Medium)
 
+    @cache
     def plasmid(self):
-        return LookupFakeCreator(Plasmid)
+        return LookupFakeCreator(self, Plasmid)
 
+    @cache
     def resistance_marker(self):
-        return LookupFakeCreator(ResistanceMarker)
+        return LookupFakeCreator(self, ResistanceMarker)
 
+    @cache
     def phage_identifier(self):
-        return LookupFakeCreator(PhageIdentifier)
+        return LookupFakeCreator(self, PhageIdentifier)
 
+    @cache
     def project(self):
-        return LookupFakeCreator(Project)
+        return LookupFakeCreator(self, Project)
 
+    @cache
     def box_number(self):
-        return LookupFakeCreator(BoxNumber)
+        return LookupFakeCreator(self, BoxNumber)
 
+    @cache
     def storage_method(self):
-        return LookupFakeCreator(StorageMethod)
+        return LookupFakeCreator(self, StorageMethod)
 
+    @cache
     def staff_member(self):
-        return LookupFakeCreator(StaffMember)
+        return LookupFakeCreator(self, StaffMember)
 
 
 class SpecimenProvider(BaseProvider):
+    @cache
     def bacterium(self):
-        return BacteriumFakeCreator()
+        return BacteriumFakeCreator(self)
 
+    @cache
     def phage(self):
-        return PhageFakeCreator()
+        return PhageFakeCreator(self)
 
+    @cache
     def specimen(self):
-        return SpecimenFakeCreator()
+        return SpecimenFakeCreator(self)
 
 
 class UploadProvider(BaseProvider):
+    @cache
     def upload(self):
-        return UploadFakeCreator()
+        return UploadFakeCreator(self)
 
     def bacteria_spreadsheet_data(self, rows=10):
         result = []

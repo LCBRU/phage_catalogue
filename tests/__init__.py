@@ -1,4 +1,7 @@
+import warnings
 from dotenv import load_dotenv
+
+warnings.filterwarnings("ignore", module="pyasn1.codec.ber.encoder", lineno=952)
 
 from phage_catalogue.model.specimens import Bacterium
 

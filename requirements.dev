@@ -77,7 +77,7 @@ et-xmlfile==2.0.0
     # via openpyxl
 execnet==2.1.2
     # via pytest-xdist
-faker==40.1.0
+faker==40.1.2
     # via lbrc-flask
 flask==3.1.2
     # via
@@ -247,7 +247,7 @@ tinycss2==1.5.1
     #   weasyprint
 tinyhtml5==2.0.0
     # via weasyprint
-trove-classifiers==2025.12.1.14
+trove-classifiers==2026.1.12.15
     # via hatchling
 typing-extensions==4.15.0
     # via
@@ -257,7 +257,6 @@ typing-extensions==4.15.0
 tzdata==2025.3
     # via
     #   arrow
-    #   faker
     #   kombu
 tzlocal==5.3.1
     # via celery

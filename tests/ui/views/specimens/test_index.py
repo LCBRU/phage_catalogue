@@ -1,48 +1,129 @@
 import pytest
-from flask import url_for
-from lbrc_flask.pytest.asserts import assert__search_html, assert__requires_login, assert__select, assert__input_date, assert__input_number, assert__input_text
-from phage_catalogue.services.lookups import get_bacterial_species_choices
 from phage_catalogue.services.specimens import get_type_choices
-from tests.requests import phage_catalogue_get
-from lbrc_flask.pytest.html_content import get_records_found, get_panel_list_row_count
+from phage_catalogue.services.lookups import get_bacterial_species_choices
+from lbrc_flask.pytest.testers import RequiresLoginTester, PanelListContentAsserter, IndexTester, PagedResultSet, RowContentAsserter
+from lbrc_flask.pytest.form_tester import FormTester, FormTesterDateField, FormTesterSelectField, FormTesterNumberField, FormTesterTextField
 
 
-def _url(external=True, **kwargs):
-    return url_for('ui.index', _external=external, **kwargs)
+class SpecimenListTester:
+    @property
+    def endpoint(self):
+        return 'ui.index'
+
+    @pytest.fixture(autouse=True)
+    def set_existing(self, client, faker, standard_lookups):
+        ...
 
 
-def _get(client, url, loggedin_user, has_form, expected_count):
-    resp = phage_catalogue_get(client, url, loggedin_user, has_form)
+class SpecimenSearchFormTester(FormTester):
+    def __init__(self, type_options=None, bacterial_species_options=None, has_csrf=False):
+        type_options = type_options or {}
+        bacterial_species_options = bacterial_species_options or {}
 
-    assert__search_html(resp.soup, clear_url=_url(external=False))
+        super().__init__(
+            fields=[
+                FormTesterSelectField(
+                    field_name='type',
+                    field_title='Type',
+                    options=type_options,
+                ),
+                FormTesterDateField(
+                    field_name='start_date',
+                    field_title='Start Date',
+                ),
+                FormTesterDateField(
+                    field_name='end_date',
+                    field_title='End Date',
+                ),
+                FormTesterNumberField(
+                    field_name='freezer',
+                    field_title='Freezer',
+                ),
+                FormTesterNumberField(
+                    field_name='drawer',
+                    field_title='Drawer',
+                ),
+                FormTesterTextField(
+                    field_name='position',
+                    field_title='Position',
+                ),
+                FormTesterTextField(
+                    field_name='project',
+                    field_title='Project',
+                ),
+                FormTesterTextField(
+                    field_name='storage_method',
+                    field_title='Storage Method',
+                ),
+                FormTesterTextField(
+                    field_name='staff_member',
+                    field_title='Staff Member',
+                ),
+                FormTesterSelectField(
+                    field_name='species_id',
+                    field_title='Bacterial Species',
+                    options=bacterial_species_options,
+                ),
+                FormTesterTextField(
+                    field_name='strain',
+                    field_title='Strain',
+                ),
+                FormTesterTextField(
+                    field_name='medium',
+                    field_title='medium',
+                ),
+                FormTesterTextField(
+                    field_name='plasmid',
+                    field_title='plasmid',
+                ),
+                FormTesterTextField(
+                    field_name='resistance_marker',
+                    field_title='resistance_marker',
+                ),
+                FormTesterTextField(
+                    field_name='phage_identifier',
+                    field_title='phage_identifier',
+                ),
+                FormTesterSelectField(
+                    field_name='host_id',
+                    field_title='Phage Host',
+                    options=bacterial_species_options,
+                ),
+            ],
+            has_csrf=has_csrf,
+        )
 
-    assert__select(soup=resp.soup, id='type', options=get_type_choices())
-    assert__input_date(soup=resp.soup, id='start_date')
-    assert__input_date(soup=resp.soup, id='end_date')
-    assert__input_number(soup=resp.soup, id='freezer')
-    assert__input_number(soup=resp.soup, id='drawer')
-    assert__input_text(soup=resp.soup, id='position')
-    assert__input_text(soup=resp.soup, id='project')
-    assert__input_text(soup=resp.soup, id='storage_method')
-    assert__input_text(soup=resp.soup, id='staff_member')
-    assert__select(soup=resp.soup, id='species_id', options=get_bacterial_species_choices())
-    assert__input_text(soup=resp.soup, id='strain')
-    assert__input_text(soup=resp.soup, id='medium')
-    assert__input_text(soup=resp.soup, id='plasmid')
-    assert__input_text(soup=resp.soup, id='resistance_marker')
-    assert__input_text(soup=resp.soup, id='phage_identifier')
-    assert__select(soup=resp.soup, id='host_id', options=get_bacterial_species_choices())
 
-    assert expected_count == get_records_found(resp.soup)
-    assert expected_count == get_panel_list_row_count(resp.soup)
-
-    return resp
+class SpecimenRowContentAsserter(PanelListContentAsserter):
+    def assert_row_details(self, row, expected_result):
+        assert row is not None
+        assert expected_result is not None
 
 
-def test__get__requires_login(client):
-    assert__requires_login(client, _url(external=False))
+class TestSpecimenListRequiresLogin(SpecimenListTester, RequiresLoginTester):
+    ...
 
 
-def test__get__one(client, faker, loggedin_user, standard_lookups):
-    specimen = faker.phage().get_in_db()
-    resp = _get(client, _url(), loggedin_user, has_form=False, expected_count=1)
+class TestSpecimenIndex(SpecimenListTester, IndexTester):
+    @property
+    def content_asserter(self) -> RowContentAsserter:
+        return SpecimenRowContentAsserter
+
+    @pytest.mark.parametrize("item_count", PagedResultSet.test_page_edges())
+    @pytest.mark.parametrize("current_page", PagedResultSet.test_current_pages())
+    def test__get__no_filters(self, item_count, current_page):
+        phages = self.faker.phage().get_list_in_db(item_count=item_count)
+
+        self.parameters['page'] = current_page
+
+        resp = self.get()
+
+        SpecimenSearchFormTester(
+            type_options=dict(get_type_choices()),
+            bacterial_species_options=dict(get_bacterial_species_choices()),
+        ).assert_all(resp=resp)
+
+        self.assert_all(
+            page_count_helper=PagedResultSet(page=current_page, expected_results=phages),
+            resp=resp,
+        )

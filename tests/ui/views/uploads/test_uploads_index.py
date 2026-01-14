@@ -1,44 +1,80 @@
+import pytest
 from flask import url_for
 from lbrc_flask.pytest.asserts import assert__search_html, assert__requires_login, assert__requires_role
-from lbrc_flask.pytest.html_content import get_records_found, get_table_row_count
+from lbrc_flask.pytest.html_content import get_records_found
 from tests.requests import phage_catalogue_get
+from lbrc_flask.pytest.testers import RequiresLoginTester, RequiresRoleTester, TableContentAsserter, IndexTester, PagedResultSet, RowContentAsserter
+from phage_catalogue.security import ROLENAME_EDITOR, ROLENAME_UPLOADER, init_authorization
 
 
-def _url(external=True, **kwargs):
-    return url_for('ui.uploads_index', _external=external, **kwargs)
+class UploadListTester:
+    @property
+    def endpoint(self):
+        return 'ui.uploads_index'
+
+    @pytest.fixture(autouse=True)
+    def set_existing(self, client, faker, standard_lookups):
+        ...
 
 
-def _get(client, url, loggedin_user, has_form, expected_count):
-    resp = phage_catalogue_get(client, url, loggedin_user, has_form)
-
-    assert__search_html(resp.soup, clear_url=_url(external=False))
-
-    assert expected_count == get_records_found(resp.soup)
-    assert expected_count == get_table_row_count(resp.soup)
-
-    return resp
+class UploadRowContentAsserter(TableContentAsserter):
+    def assert_row_details(self, row, expected_result):
+        assert row is not None
+        assert expected_result is not None
 
 
-def test__get__requires_login(client):
-    assert__requires_login(client, _url(external=False))
+class TestUploadListRequiresLogin(UploadListTester, RequiresLoginTester):
+    ...
 
 
-def test__get__requires_editor_login__not(client, loggedin_user):
-    assert__requires_role(client, _url(external=False))
+class TestUploadListRequiresUploader(UploadListTester, RequiresRoleTester):
+    @property
+    def user_with_required_role(self):
+        return self.faker.user().get_in_db(rolename=ROLENAME_UPLOADER)
+
+    @property
+    def user_without_required_role(self):
+        return self.faker.user().get_in_db()
 
 
-def test__get__one(client, faker, loggedin_user_uploader, standard_lookups):
-    upload = faker.upload().get_in_db()
-    resp = _get(client, _url(), loggedin_user_uploader, has_form=False, expected_count=1)
+class TestStudyList(UploadListTester, IndexTester):
+    def user_to_login(self, faker):
+        return faker.user().get_in_db(rolename=ROLENAME_UPLOADER)
 
+    @property
+    def content_asserter(self) -> RowContentAsserter:
+        return UploadRowContentAsserter
 
-def test__search__one_found(client, faker, loggedin_user_uploader, standard_lookups):
-    uploads = [faker.upload().get_in_db() for _ in range(10)]
+    @pytest.mark.parametrize("item_count", PagedResultSet.test_page_edges())
+    @pytest.mark.parametrize("current_page", PagedResultSet.test_current_pages())
+    def test__get__no_filters(self, item_count, current_page):
+        phages = self.faker.upload().get_list_in_db(item_count=item_count)
 
-    resp = _get(client, _url(search=uploads[0].filename), loggedin_user_uploader, has_form=False, expected_count=1)
+        self.parameters['page'] = current_page
 
+        resp = self.get()
 
-def test__search__none_found(client, faker, loggedin_user_uploader, standard_lookups):
-    upload = faker.upload().get_in_db(filename='not_there.xslx')
+        self.assert_all(
+            page_count_helper=PagedResultSet(page=current_page, expected_results=phages),
+            resp=resp,
+        )
 
-    resp = _get(client, _url(search='suttin_else.xslx'), loggedin_user_uploader, has_form=False, expected_count=0)
+    @pytest.mark.parametrize("item_count", PagedResultSet.test_page_edges())
+    @pytest.mark.parametrize("current_page", PagedResultSet.test_current_pages())
+    def test__get__no_filters(self, item_count, current_page):
+        phages = self.faker.upload().get_list_in_db(
+            filename='somthing.xslx',
+            item_count=item_count,
+        )
+        _ = self.faker.upload().get_in_db(filename='somthing_else.xslx')
+
+        self.parameters['page'] = current_page
+
+        self.parameters['search'] = 'somthing.xslx'
+
+        resp = self.get()
+
+        self.assert_all(
+            page_count_helper=PagedResultSet(page=current_page, expected_results=phages),
+            resp=resp,
+        )
