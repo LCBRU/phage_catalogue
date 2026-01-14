@@ -13,7 +13,7 @@ def phage_catalogue_get(client, url, user, has_form=False):
     return resp
 
 
-def phage_catalogue_modal_get(client, url, user, has_form=False):
-    resp = get_and_assert_standards_modal(client, url, user, has_form)
+def phage_catalogue_modal_get(client, url, has_form=False):
+    resp = get_and_assert_standards_modal(client, url, has_form)
 
     return resp

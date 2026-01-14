@@ -51,7 +51,7 @@ def _url(external=True, **kwargs):
 
 
 def _get(client, url, loggedin_user, has_form):
-    resp = phage_catalogue_modal_get(client, url, loggedin_user, has_form)
+    resp = phage_catalogue_modal_get(client, url, has_form)
 
     assert_phage_form(resp)
 

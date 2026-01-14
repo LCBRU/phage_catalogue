@@ -15,7 +15,7 @@ def assert_bacterium_form(resp):
     assert__input_text(resp.soup, 'project')
     assert__input_text(resp.soup, 'storage_method')
     assert__input_text(resp.soup, 'staff_member')
-    assert__select(resp.soup, 'species_id', [('0', '')] + [(str(bs.id), bs.name) for bs in db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.name)).scalars()])
+    assert__select(resp.soup, 'species_id', dict([('0', '')] + [(str(bs.id), bs.name) for bs in db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.name)).scalars()]))
     assert__input_text(resp.soup, 'strain')
     assert__input_text(resp.soup, 'medium')
     assert__input_text(resp.soup, 'plasmid')
@@ -34,7 +34,7 @@ def assert_phage_form(resp):
     assert__input_text(resp.soup, 'project')
     assert__input_text(resp.soup, 'storage_method')
     assert__input_text(resp.soup, 'staff_member')
-    assert__select(resp.soup, 'host_id', [('0', '')] + [(str(bs.id), bs.name) for bs in db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.name)).scalars()])
+    assert__select(resp.soup, 'host_id', dict([('0', '')] + [(str(bs.id), bs.name) for bs in db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.name)).scalars()]))
     assert__input_text(resp.soup, 'phage_identifier')
 
 

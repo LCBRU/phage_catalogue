@@ -68,9 +68,10 @@ class SpecimenFakeCreator(FakeCreator):
     cls = Specimen
 
     def _create_item(self, save: bool, args: FakeCreatorArgs):
-        creator_cls = choice([BacteriumFakeCreator, PhageFakeCreator])
-        creator = creator_cls()
-        return creator._create_item(save, args)
+        if choice([True, False]):
+            return self.faker.bacterium()._create_item(save, args)
+        else:
+            return self.faker.phage()._create_item(save, args)
 
 
 class UploadFakeCreator(FakeCreator):
