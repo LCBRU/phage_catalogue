@@ -211,7 +211,7 @@ class UploadProvider(BaseProvider):
         result = []
 
         for _ in range(rows):
-            b = self.generator.bacterium().get()
+            b = self.generator.bacterium().get(save=False)
             result.append(b)
 
         return convert_specimens_to_spreadsheet_data(result)
@@ -220,7 +220,7 @@ class UploadProvider(BaseProvider):
         result = []
 
         for _ in range(rows):
-            p = self.generator.phage().get()
+            p = self.generator.phage().get(save=False)
             result.append(p)
         
         return convert_specimens_to_spreadsheet_data(result)
@@ -229,7 +229,7 @@ class UploadProvider(BaseProvider):
         result = []
 
         for _ in range(rows):
-            s = self.generator.specimen().get()
+            s = self.generator.specimen().get(save=False)
             result.append(s)
         
         return convert_specimens_to_spreadsheet_data(result)

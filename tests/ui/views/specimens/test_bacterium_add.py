@@ -42,7 +42,7 @@ def test__get__has_form(client, loggedin_user_editor, standard_lookups):
 
 
 def test__post__valid_bacterium(client, faker, loggedin_user_editor, standard_lookups):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     resp = _post(
         client=client,
         url=_url(),
@@ -62,7 +62,7 @@ def test__post__valid_bacterium(client, faker, loggedin_user_editor, standard_lo
     "missing_column_name", bacterium_form_lookup_names() + ['species_id', 'freezer', 'drawer', 'position', 'name', 'description', 'sample_date'],
 )
 def test__post__missing_column(client, faker, loggedin_user_editor, standard_lookups, missing_column_name):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     data = convert_specimen_to_form_data(expected)
     data[missing_column_name] = ''
 
@@ -80,7 +80,7 @@ def test__post__missing_column(client, faker, loggedin_user_editor, standard_loo
     "invalid_column_name", ['freezer', 'drawer'],
 )
 def test__post__invalid_column__integer(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     data = convert_specimen_to_form_data(expected)
     data[invalid_column_name] = 'Blob'
 
@@ -98,7 +98,7 @@ def test__post__invalid_column__integer(client, faker, loggedin_user_editor, sta
     "invalid_column_name", ['sample_date'],
 )
 def test__post__invalid_column__date(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     data = convert_specimen_to_form_data(expected)
     data[invalid_column_name] = 'Blob'
 
@@ -116,7 +116,7 @@ def test__post__invalid_column__date(client, faker, loggedin_user_editor, standa
     "invalid_column_name", ['species_id'],
 )
 def test__post__invalid_column__select_value(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     data = convert_specimen_to_form_data(expected)
     data[invalid_column_name] = 'Blob'
 
@@ -134,7 +134,7 @@ def test__post__invalid_column__select_value(client, faker, loggedin_user_editor
     "invalid_column_name", ['species_id'],
 )
 def test__post__invalid_column__select_non_existent(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     data = convert_specimen_to_form_data(expected)
     data[invalid_column_name] = 1000
 
@@ -152,7 +152,7 @@ def test__post__invalid_column__select_non_existent(client, faker, loggedin_user
     "invalid_column_name", bacterium_form_lookup_names() + ['name', 'position'],
 )
 def test__post__invalid_column__string_length(client, faker, loggedin_user_editor, standard_lookups, invalid_column_name):
-    expected: Bacterium = faker.bacterium().get()
+    expected: Bacterium = faker.bacterium().get(save=False)
     data = convert_specimen_to_form_data(expected)
     data[invalid_column_name] = 'A'*1000
 
