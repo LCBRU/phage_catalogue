@@ -30,7 +30,7 @@ def updater_phage(faker, standard_lookups):
 
 
 def original_phage(faker, standard_lookups):
-    original: Phage = faker.phage().get_in_db(
+    original: Phage = faker.phage().get(save=True, 
         host=standard_lookups['bacterial_species'][0],
         phage_identifier=standard_lookups['phage_identifier'][0],
         project=standard_lookups['project'][0],
@@ -230,7 +230,7 @@ def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_
 
     expected: Phage = faker.phage().get(
         save=False,
-        host=faker.bacterial_species().get_in_db(),
+        host=faker.bacterial_species().get(save=True),
         lookups_in_db=False,
         )
     data = convert_specimen_to_form_data(expected)

@@ -107,20 +107,20 @@ def test__post__valid_file__update(client, faker, loggedin_user_uploader, standa
     rows = 10
     match data_source:
         case 'bacteria':
-            existing = [faker.bacterium().get_in_db() for _ in range(rows)]
+            existing = [faker.bacterium().get(save=True) for _ in range(rows)]
             data = faker.bacteria_spreadsheet_data(rows=rows)
         case 'phages':
-            existing = [faker.phage().get_in_db() for _ in range(rows)]
+            existing = [faker.phage().get(save=True) for _ in range(rows)]
             data = faker.phage_spreadsheet_data(rows=rows)
         case 'specimens':
             existing = []
             data = []
             for _ in range(rows):
                 if choice([True, False]):
-                    existing.append(faker.bacterium().get_in_db())
+                    existing.append(faker.bacterium().get(save=True))
                     data.extend(faker.bacteria_spreadsheet_data(rows=1))
                 else:
-                    existing.append(faker.phage().get_in_db())
+                    existing.append(faker.phage().get(save=True))
                     data.extend(faker.phage_spreadsheet_data(rows=1))
 
     for d, e in zip(data, existing):
@@ -360,10 +360,10 @@ def test__post__specimen__key_does_not_exist(client, faker, loggedin_user_upload
 def test__post__specimen__key_for_wrong_type_of_specimen(client, faker, loggedin_user_uploader, standard_lookups, data_source):
     match data_source:
         case 'bacteria':
-            existing = faker.phage().get_in_db()
+            existing = faker.phage().get(save=True)
             data = faker.bacteria_spreadsheet_data(rows=1)
         case 'phages':
-            existing = faker.bacterium().get_in_db()
+            existing = faker.bacterium().get(save=True)
             data = faker.phage_spreadsheet_data(rows=1)
 
     data[0]['key'] = existing.id
@@ -412,7 +412,7 @@ def test__post__phage__invalid_host(client, faker, loggedin_user_uploader, stand
 def test__post__new_lookup_values__bacterium(client, faker, loggedin_user_uploader):
     data = convert_specimens_to_spreadsheet_data([faker.bacterium().get(
         save=False,
-        species=faker.bacterial_species().get_in_db(),
+        species=faker.bacterial_species().get(save=True),
         lookups_in_db=False,
         )])
 
@@ -442,7 +442,7 @@ def test__post__new_lookup_values__bacterium(client, faker, loggedin_user_upload
 def test__post__new_lookup_values__phage(client, faker, loggedin_user_uploader):
     data = convert_specimens_to_spreadsheet_data([faker.phage().get(
         save=False,
-        host=faker.bacterial_species().get_in_db(),
+        host=faker.bacterial_species().get(save=True),
         lookups_in_db=False,
         )])
 

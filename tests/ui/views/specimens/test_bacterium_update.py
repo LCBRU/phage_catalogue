@@ -33,7 +33,7 @@ def updater_bacterium(faker, standard_lookups):
 
 
 def original_bacterium(faker, standard_lookups):
-    original: Bacterium = faker.bacterium().get_in_db(
+    original: Bacterium = faker.bacterium().get(save=True, 
         species=standard_lookups['bacterial_species'][0],
         strain=standard_lookups['strain'][0],
         medium=standard_lookups['medium'][0],
@@ -239,7 +239,7 @@ def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_
 
     expected: Bacterium = faker.bacterium().get(
         save=False,
-        species=faker.bacterial_species().get_in_db(),
+        species=faker.bacterial_species().get(save=True),
         lookups_in_db=False,
         )
     data = convert_specimen_to_form_data(expected)

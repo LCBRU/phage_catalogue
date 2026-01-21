@@ -123,16 +123,16 @@ class LookupProvider(BaseProvider):
 
     def create_standard_lookups(self):
         for i in range(5):
-            self.bacterial_species().get_in_db(name=self.bacterial_species_name(i))
-            self.strain().get_in_db(name=self.strain_name(i))
-            self.medium().get_in_db(name=self.medium_name(i))
-            self.plasmid().get_in_db(name=self.plasmid_name(i))
-            self.resistance_marker().get_in_db(name=self.resistance_marker_name(i))
-            self.phage_identifier().get_in_db(name=self.phage_identifier_name(i))
-            self.project().get_in_db(name=self.project_name(i))
-            self.box_number().get_in_db(name=self.box_number_name(i))
-            self.storage_method().get_in_db(name=self.storage_method_name(i))
-            self.staff_member().get_in_db(name=self.staff_member_name(i))
+            self.bacterial_species().get(save=True, name=self.bacterial_species_name(i))
+            self.strain().get(save=True, name=self.strain_name(i))
+            self.medium().get(save=True, name=self.medium_name(i))
+            self.plasmid().get(save=True, name=self.plasmid_name(i))
+            self.resistance_marker().get(save=True, name=self.resistance_marker_name(i))
+            self.phage_identifier().get(save=True, name=self.phage_identifier_name(i))
+            self.project().get(save=True, name=self.project_name(i))
+            self.box_number().get(save=True, name=self.box_number_name(i))
+            self.storage_method().get(save=True, name=self.storage_method_name(i))
+            self.staff_member().get(save=True, name=self.staff_member_name(i))
 
         return {
             'bacterial_species': list(db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.id)).scalars()),

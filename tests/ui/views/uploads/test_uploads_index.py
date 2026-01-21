@@ -30,16 +30,16 @@ class TestUploadListRequiresLogin(UploadListTester, RequiresLoginTester):
 class TestUploadListRequiresUploader(UploadListTester, RequiresRoleTester):
     @property
     def user_with_required_role(self):
-        return self.faker.user().get_in_db(rolename=ROLENAME_UPLOADER)
+        return self.faker.user().get(save=True, rolename=ROLENAME_UPLOADER)
 
     @property
     def user_without_required_role(self):
-        return self.faker.user().get_in_db()
+        return self.faker.user().get(save=True)
 
 
 class TestStudyList(UploadListTester, IndexTester):
     def user_to_login(self, faker):
-        return faker.user().get_in_db(rolename=ROLENAME_UPLOADER)
+        return faker.user().get(save=True, rolename=ROLENAME_UPLOADER)
 
     @property
     def content_asserter(self) -> RowContentAsserter:
@@ -66,7 +66,7 @@ class TestStudyList(UploadListTester, IndexTester):
             filename='somthing.xslx',
             item_count=item_count,
         )
-        _ = self.faker.upload().get_in_db(filename='somthing_else.xslx')
+        _ = self.faker.upload().get(save=True, filename='somthing_else.xslx')
 
         self.parameters['page'] = current_page
 

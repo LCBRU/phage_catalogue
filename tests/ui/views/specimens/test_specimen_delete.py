@@ -15,17 +15,17 @@ def _post(client, url):
 
 
 def test__get__requires_login(client, faker, standard_lookups):
-    original = faker.phage().get_in_db()
+    original = faker.phage().get(save=True)
     assert__requires_login(client, _url(id=original.id, external=False), post=True)
 
 
 def test__get__requires_editor_login__not(client, faker, loggedin_user, standard_lookups):
-    original = faker.phage().get_in_db()
+    original = faker.phage().get(save=True)
     assert__requires_role(client, _url(id=original.id, external=False), post=True)
 
 
 def test__post__valid_phage(client, faker, loggedin_user_editor, standard_lookups):
-    originals = [faker.phage().get_in_db() for _ in range(10)]
+    originals = [faker.phage().get(save=True) for _ in range(10)]
 
     original = choice(originals)
 
@@ -39,7 +39,7 @@ def test__post__valid_phage(client, faker, loggedin_user_editor, standard_lookup
 
 
 def test__post__valid_bacterium(client, faker, loggedin_user_editor, standard_lookups):
-    originals = [faker.bacterium().get_in_db() for _ in range(10)]
+    originals = [faker.bacterium().get(save=True) for _ in range(10)]
 
     original = choice(originals)
 
