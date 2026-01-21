@@ -166,6 +166,7 @@ def test__post__invalid_column__string_length(client, faker, loggedin_user_edito
 
 def test__post__new_lookup_values(client, faker, loggedin_user_editor):
     expected: Phage = faker.phage().get(
+        save=False,
         host=faker.bacterial_species().get_in_db(),
         lookups_in_db=False,
         )

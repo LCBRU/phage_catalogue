@@ -12,6 +12,7 @@ from tests.ui.views.specimens import assert_actual_equals_expected_phage, assert
 
 def updater_phage(faker, standard_lookups):
     expected: Phage = faker.phage().get(
+        save=False,
         host=standard_lookups['bacterial_species'][1],
         phage_identifier=standard_lookups['phage_identifier'][1],
         project=standard_lookups['project'][1],
@@ -213,6 +214,7 @@ def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_
     original = original_phage(faker, standard_lookups)
 
     expected: Phage = faker.phage().get(
+        save=False,
         host=standard_lookups['bacterial_species'][1],
         phage_identifier=faker.phage_identifier_name(101),
         project=faker.project_name(101),
@@ -227,6 +229,7 @@ def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_
     )
 
     expected: Phage = faker.phage().get(
+        save=False,
         host=faker.bacterial_species().get_in_db(),
         lookups_in_db=False,
         )

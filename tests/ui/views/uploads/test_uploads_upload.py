@@ -411,6 +411,7 @@ def test__post__phage__invalid_host(client, faker, loggedin_user_uploader, stand
 @pytest.mark.xdist_group(name="spreadsheets")
 def test__post__new_lookup_values__bacterium(client, faker, loggedin_user_uploader):
     data = convert_specimens_to_spreadsheet_data([faker.bacterium().get(
+        save=False,
         species=faker.bacterial_species().get_in_db(),
         lookups_in_db=False,
         )])
@@ -440,6 +441,7 @@ def test__post__new_lookup_values__bacterium(client, faker, loggedin_user_upload
 @pytest.mark.xdist_group(name="spreadsheets")
 def test__post__new_lookup_values__phage(client, faker, loggedin_user_uploader):
     data = convert_specimens_to_spreadsheet_data([faker.phage().get(
+        save=False,
         host=faker.bacterial_species().get_in_db(),
         lookups_in_db=False,
         )])

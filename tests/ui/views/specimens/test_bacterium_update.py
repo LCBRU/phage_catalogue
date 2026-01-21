@@ -12,6 +12,7 @@ from tests.ui.views.specimens import assert_actual_equals_expected_bacterium, as
 
 def updater_bacterium(faker, standard_lookups):
     expected: Bacterium = faker.bacterium().get(
+        save=False,
         species=standard_lookups['bacterial_species'][1],
         strain=standard_lookups['strain'][1],
         medium=standard_lookups['medium'][1],
@@ -219,6 +220,7 @@ def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_
     original = original_bacterium(faker, standard_lookups)
 
     expected: Bacterium = faker.bacterium().get(
+        save=False,
         species=standard_lookups['bacterial_species'][1],
         strain=faker.strain_name(101),
         medium=faker.medium_name(101),
@@ -236,6 +238,7 @@ def test__post__new_lookup_values(client, faker, loggedin_user_editor, standard_
     )
 
     expected: Bacterium = faker.bacterium().get(
+        save=False,
         species=faker.bacterial_species().get_in_db(),
         lookups_in_db=False,
         )
