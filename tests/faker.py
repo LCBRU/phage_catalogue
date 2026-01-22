@@ -13,54 +13,56 @@ class BacteriumFakeCreator(FakeCreator):
     cls = Bacterium
 
     def _create_item(self, save: bool, args: FakeCreatorArgs):
-        if args.get('lookups_in_db', True):
-            lookup_getter = args.get_or_choice_from_db
-        else:
-            lookup_getter = args.get_or_create
+        def lookupgetter(fake_creator):
+            if args.get('lookups_in_db', True):
+                return lambda: fake_creator.choice_from_db()
+            else:
+                return lambda: fake_creator.get(save=save)
 
         result = self.cls(
-            species = lookup_getter('species', self.faker.bacterial_species()),
-            strain = lookup_getter('strain', self.faker.strain()),
-            medium = lookup_getter('medium', self.faker.medium()),
-            plasmid = lookup_getter('plasmid', self.faker.plasmid()),
-            resistance_marker = lookup_getter('resistance_marker', self.faker.resistance_marker()),
+            species = args.get('species', lookupgetter(self.faker.bacterial_species())),
+            strain = args.get('strain', lookupgetter(self.faker.strain())),
+            medium = args.get('medium', lookupgetter(self.faker.medium())),
+            plasmid = args.get('plasmid', lookupgetter(self.faker.plasmid())),
+            resistance_marker = args.get('resistance_marker', lookupgetter(self.faker.resistance_marker())),
             sample_date = args.get('sample_date', self.faker.date_object()),
             freezer = args.get('freezer', self.faker.random_int()),
             drawer = args.get('drawer', self.faker.random_int()),
             position = args.get('position', self.faker.random_letter()),
             description = args.get('description', self.faker.sentence()),
-            project = lookup_getter('project', self.faker.project()),
-            box_number = lookup_getter('box_number', self.faker.box_number()),
-            storage_method = lookup_getter('storage_method', self.faker.storage_method()),
-            staff_member = lookup_getter('staff_member', self.faker.staff_member()),
+            project = args.get('project', lookupgetter(self.faker.project())),
+            box_number = args.get('box_number', lookupgetter(self.faker.box_number())),
+            storage_method = args.get('storage_method', lookupgetter(self.faker.storage_method())),
+            staff_member = args.get('staff_member', lookupgetter(self.faker.staff_member())),
             notes = args.get('notes', self.faker.paragraph()),
             name = args.get('name', f"Bacterium: {self.faker.pystr()}"),
         )
 
         return result
-
+    
 
 class PhageFakeCreator(FakeCreator):
     cls = Phage
 
     def _create_item(self, save: bool, args: FakeCreatorArgs):
-        if args.get('lookups_in_db', True):
-            lookup_getter = args.get_or_choice_from_db
-        else:
-            lookup_getter = args.get_or_create
+        def lookupgetter(fake_creator):
+            if args.get('lookups_in_db', True):
+                return lambda: fake_creator.choice_from_db()
+            else:
+                return lambda: fake_creator.get(save=save)
 
         result = self.cls(
-            phage_identifier = lookup_getter('phage_identifier', self.faker.phage_identifier()),
-            host = lookup_getter('host', self.faker.bacterial_species()),
+            phage_identifier = args.get('phage_identifier', lookupgetter(self.faker.phage_identifier())),
+            host = args.get('host', lookupgetter(self.faker.bacterial_species())),
             sample_date = args.get('sample_date', self.faker.date_object()),
             freezer = args.get('freezer', self.faker.random_int()),
             drawer = args.get('draw', self.faker.random_int()),
             position = args.get('position', self.faker.random_letter()),
             description = args.get('description', self.faker.sentence()),
-            project = lookup_getter('project', self.faker.project()),
-            box_number = lookup_getter('box_number', self.faker.box_number()),
-            storage_method = lookup_getter('storage_method', self.faker.storage_method()),
-            staff_member = lookup_getter('staff_member', self.faker.staff_member()),
+            project = args.get('project', lookupgetter(self.faker.project())),
+            box_number = args.get('box_number', lookupgetter(self.faker.box_number())),
+            storage_method = args.get('storage_method', lookupgetter(self.faker.storage_method())),
+            staff_member = args.get('staff_member', lookupgetter(self.faker.staff_member())),
             notes = args.get('notes', self.faker.paragraph()),
             name = args.get('name', f"Bacterium: {self.faker.pystr()}"),
         )
@@ -133,6 +135,17 @@ class LookupProvider(BaseProvider):
             self.box_number().get(save=True, name=self.box_number_name(i))
             self.storage_method().get(save=True, name=self.storage_method_name(i))
             self.staff_member().get(save=True, name=self.staff_member_name(i))
+
+        self.bacterial_species().populated_with_defaults = True
+        self.strain().populated_with_defaults = True
+        self.medium().populated_with_defaults = True
+        self.plasmid().populated_with_defaults = True
+        self.resistance_marker().populated_with_defaults = True
+        self.phage_identifier().populated_with_defaults = True
+        self.project().populated_with_defaults = True
+        self.box_number().populated_with_defaults = True
+        self.storage_method().populated_with_defaults = True
+        self.staff_member().populated_with_defaults = True
 
         return {
             'bacterial_species': list(db.session.execute(select(BacterialSpecies).order_by(BacterialSpecies.id)).scalars()),
