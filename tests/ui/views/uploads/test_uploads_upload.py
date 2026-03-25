@@ -38,7 +38,7 @@ def _post(client, url, file, filename):
 
 
 def _post_upload_data(client, faker, data, expected_status, expected_errors, expected_specimens):
-    file = faker.xlsx(headers=UploadColumnDefinition().column_names, data=data)
+    file = faker.xlsx_file().get(headers=UploadColumnDefinition().column_names, data=data)
     _post_upload_file(client, expected_status, expected_errors, expected_specimens, file)
 
 
@@ -152,7 +152,7 @@ def test__post__missing_column(client, faker, loggedin_user_uploader, standard_l
 
     data = faker.specimen_spreadsheet_data()
 
-    file = faker.xlsx(headers=columns_to_include, data=data)
+    file = faker.xlsx_file().get(headers=columns_to_include, data=data)
 
     _post_upload_file(
         client=client,
@@ -177,7 +177,7 @@ def test__post__case_insenstive_column_names(client, faker, loggedin_user_upload
             columns_to_include = [cn.title() for cn in UploadColumnDefinition().column_names]
 
     data = faker.specimen_spreadsheet_data()
-    file = faker.xlsx(headers=columns_to_include, data=data)
+    file = faker.xlsx_file().get(headers=columns_to_include, data=data)
 
     _post_upload_file(
         client,

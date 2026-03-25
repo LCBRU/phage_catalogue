@@ -1,10 +1,6 @@
 import pytest
-from flask import url_for
-from lbrc_flask.pytest.asserts import assert__search_html, assert__requires_login, assert__requires_role
-from lbrc_flask.pytest.html_content import get_records_found
-from tests.requests import phage_catalogue_get
 from lbrc_flask.pytest.testers import RequiresLoginTester, RequiresRoleTester, TableContentAsserter, IndexTester, PagedResultSet, RowContentAsserter
-from phage_catalogue.security import ROLENAME_EDITOR, ROLENAME_UPLOADER, init_authorization
+from phage_catalogue.security import ROLENAME_UPLOADER
 
 
 class UploadListTester:
