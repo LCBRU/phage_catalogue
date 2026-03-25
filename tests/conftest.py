@@ -4,7 +4,8 @@ import pytest
 from faker import Faker
 from lbrc_flask.pytest.fixtures import *
 from phage_catalogue import create_app
-from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider, LbrcFileProvider, UserProvider
+from lbrc_flask.pytest.faker import LbrcFlaskFakerProvider, UserProvider
+from lbrc_flask.pytest.fakers.column_data_faker import LbrcFileProvider
 from lbrc_flask.pytest.helpers import login
 from phage_catalogue.config import TestConfig
 from phage_catalogue.security import ROLENAME_EDITOR, ROLENAME_UPLOADER, init_authorization
